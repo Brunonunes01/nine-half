@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Badge from '../../ui/Badge';
 import { colors } from '../../../theme/colors';
 import { radius } from '../../../theme/radius';
-import { shadows } from '../../../theme/shadows';
+import { themeShadows } from '../../../theme/themeShadows';
 import { spacing } from '../../../theme/spacing';
 import { typography } from '../../../theme/typography';
 import { getUserById } from '../../../services/userService';

@@ -17,7 +17,7 @@ import { useProducts } from '../../hooks/useProducts';
 import { useShowcase } from '../../hooks/useShowcase';
 import { colors } from '../../theme/colors';
 import { radius } from '../../theme/radius';
-import { shadows } from '../../theme/shadows';
+import { themeShadows } from '../../theme/themeShadows';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 
@@ -473,7 +473,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    ...shadows.heavy
+    ...themeShadows.heavy
   },
   modalBackdrop: {
     flex: 1,

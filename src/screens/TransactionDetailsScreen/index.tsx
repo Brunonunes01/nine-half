@@ -15,7 +15,7 @@ import { getUserById } from '../../services/userService';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
-import { shadows } from '../../theme/shadows';
+import { themeShadows } from '../../theme/themeShadows';
 import { formatCurrencyBRL, formatSizeBR } from '../../utils/formatters';
 
 export default function TransactionDetailsScreen({ route, navigation }: any) {
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderRadius: 4,
     padding: spacing.xl,
-    ...shadows.heavy,
+    ...themeShadows.heavy,
     position: 'relative'
   },
   receiptTop: {
@@ -504,7 +504,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    ...shadows.medium
+    ...themeShadows.medium
   },
   shareButtonText: {
     fontSize: 14,

@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../../theme/colors';
 import { radius } from '../../../theme/radius';
 import { spacing } from '../../../theme/spacing';
-import { shadows } from '../../../theme/shadows';
+import { themeShadows } from '../../../theme/themeShadows';
 
 export default function ImagePreview({
   uri,

@@ -17,7 +17,7 @@ import { uploadProductImage } from '../../services/storageService';
 import { radius } from '../../theme/radius';
 import { spacing } from '../../theme/spacing';
 import { colors } from '../../theme/colors';
-import { shadows } from '../../theme/shadows';
+import { themeShadows } from '../../theme/themeShadows';
 import { typography } from '../../theme/typography';
 import { validateRequired } from '../../utils/validators';
 
