@@ -1,37 +1,35 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, Text, View, Image, ScrollView } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ScreenContainer from '../../components/layout/ScreenContainer';
 import Header from '../../components/layout/Header';
 import Loading from '../../components/ui/Loading';
 import EmptyState from '../../components/ui/EmptyState';
 import Badge from '../../components/ui/Badge';
+import { getPaymentMethodLabel } from '../../constants/paymentMethods';
 import { useTransactions } from '../../hooks/useTransactions';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
-import { radius } from '../../theme/radius';
-import { shadows } from '../../theme/shadows';
 import { typography } from '../../theme/typography';
+import { shadows } from '../../theme/shadows';
+import { formatCurrencyBRL, formatSizeBR } from '../../utils/formatters';
 
-export default function TransactionDetailsScreen({ navigation, route }: any) {
+export default function TransactionDetailsScreen({ route }: any) {
   const transactionId = route.params?.transactionId;
   const { selectedTransaction, loadTransactionById, loading, error } = useTransactions();
 
   useEffect(() => {
     if (!transactionId) return;
     loadTransactionById(transactionId);
-  }, [transactionId]);
+  }, [transactionId, loadTransactionById]);
 
-  if (loading && !selectedTransaction) return <Loading text="Carregando Comprovante..." />;
-  
+  if (loading && !selectedTransaction) return <Loading text="GERANDO COMPROVANTE..." />;
+
   if (!selectedTransaction) {
     return (
-      <ScreenContainer>
+      <ScreenContainer backgroundColor={colors.background}>
         <Header title="Comprovante" showBack />
-        <EmptyState 
-          title="Transação não encontrada" 
-          description={error || 'Não foi possível recuperar o registro desta transação.'} 
-        />
+        <EmptyState title="Nao encontrado" description={error || 'Nao foi possivel recuperar esta transacao.'} />
       </ScreenContainer>
     );
   }
@@ -41,60 +39,57 @@ export default function TransactionDetailsScreen({ navigation, route }: any) {
     : '-';
 
   return (
-    <ScreenContainer scroll>
-      <Header title="Comprovante de Venda" subtitle="Prova de negociação bem-sucedida." showBack />
+    <ScreenContainer scroll backgroundColor={colors.background}>
+      <Header title="Comprovante" showBack subtitle="Prova digital da negociacao concluida." />
 
-      <View style={styles.receiptCard}>
+      <View style={styles.receipt}>
         <View style={styles.receiptHeader}>
-          <View style={styles.logoCircle}>
-            <Ionicons name="receipt" size={32} color={colors.white} />
+          <View style={styles.iconBox}>
+            <Ionicons name="checkmark-seal" size={44} color={colors.black} />
           </View>
-          <Text style={styles.receiptTitle}>Transação Concluída</Text>
-          <Text style={styles.receiptSubtitle}>{date}</Text>
+          <Text style={styles.statusTitle}>VENDA CONCLUIDA</Text>
+          <Text style={styles.receiptDate}>{date}</Text>
         </View>
 
         <View style={styles.divider} />
 
-        <View style={styles.productInfo}>
-          {selectedTransaction.productImageUrl ? (
-            <Image 
-              source={{ uri: selectedTransaction.productImageUrl }} 
-              style={styles.productImage} 
-              resizeMode="cover"
-            />
-          ) : (
-            <View style={styles.placeholderImage}>
-              <Ionicons name="image-outline" size={32} color={colors.textMuted} />
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>ITEM TRANSACIONADO</Text>
+          <View style={styles.productCard}>
+            {selectedTransaction.productImageUrl ? (
+              <Image source={{ uri: selectedTransaction.productImageUrl }} style={styles.productImage} resizeMode="cover" />
+            ) : (
+              <View style={styles.placeholderImage}>
+                <Ionicons name="image-outline" size={24} color={colors.textCaption} />
+              </View>
+            )}
+            <View style={styles.productInfo}>
+              <Text style={styles.brand}>{selectedTransaction.productBrand?.toUpperCase() || 'SNEAKER'}</Text>
+              <Text style={styles.model}>{selectedTransaction.productModel || 'Item sem nome'}</Text>
+              <Badge label="vendido" />
             </View>
-          )}
-          <View style={styles.productDetails}>
-            <Text style={styles.brand}>{selectedTransaction.productBrand || 'Sneaker'}</Text>
-            <Text style={styles.model}>{selectedTransaction.productModel || 'Item sem nome'}</Text>
-            <Badge label={selectedTransaction.status} />
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>DETALHES DA OPERACAO</Text>
+          <View style={styles.detailsList}>
+            <DetailRow label="ID TRANSACAO" value={`#${selectedTransaction.id.toUpperCase()}`} />
+            <DetailRow label="COMPRADOR" value={`ID: ${selectedTransaction.buyerId.slice(0, 12)}...`} />
+            <DetailRow label="VENDEDOR" value={`ID: ${selectedTransaction.sellerId.slice(0, 12)}...`} />
+            <DetailRow label="TAMANHO" value={formatSizeBR(selectedTransaction.productSize)} />
+            <DetailRow label="COR" value={selectedTransaction.productColor || '-'} />
+            <DetailRow label="LOCAL" value={selectedTransaction.productLocation || '-'} />
+            <DetailRow label="PAGAMENTO" value={getPaymentMethodLabel(selectedTransaction.paymentMethod)} />
           </View>
         </View>
 
         <View style={styles.divider} />
 
-        <View style={styles.detailsList}>
-          <DetailRow label="ID da Transação" value={`#${selectedTransaction.id.slice(-8).toUpperCase()}`} />
-          <DetailRow label="ID do Comprador" value={`...${selectedTransaction.buyerId.slice(-6)}`} />
-          <DetailRow label="ID do Vendedor" value={`...${selectedTransaction.sellerId.slice(-6)}`} />
-          <DetailRow label="Vitrine" value={selectedTransaction.showcaseId} />
+        <View style={styles.totalContainer}>
+          <Text style={styles.totalLabel}>VALOR FINAL</Text>
+          <Text style={styles.totalValue}>{formatCurrencyBRL(selectedTransaction.valor)}</Text>
         </View>
-
-        <View style={styles.divider} />
-
-        <View style={styles.totalRow}>
-          <Text style={styles.totalLabel}>Valor Total</Text>
-          <Text style={styles.totalValue}>R$ {selectedTransaction.valor}</Text>
-        </View>
-
-        <View style={styles.decorativeDashes} />
-        
-        <Text style={styles.footerNote}>
-          Este é um registro oficial do ecossistema Nine Half.
-        </Text>
       </View>
     </ScreenContainer>
   );
@@ -104,132 +99,140 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.detailItem}>
       <Text style={styles.detailLabel}>{label}</Text>
-      <Text style={styles.detailValue} numberOfLines={1}>{value}</Text>
+      <Text style={styles.detailValue} numberOfLines={1}>
+        {value}
+      </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  receiptCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    padding: spacing.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...shadows.floating,
-    marginBottom: spacing.xxl,
+  receipt: {
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xxl
   },
   receiptHeader: {
     alignItems: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: spacing.xl
   },
-  logoCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.success,
+  iconBox: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.md,
+    ...shadows.medium
   },
-  receiptTitle: {
-    ...typography.h3,
-    color: colors.textPrimary,
-    fontWeight: '800',
+  statusTitle: {
+    ...typography.h2,
+    fontWeight: '900',
+    letterSpacing: -0.5,
+    color: colors.white
   },
-  receiptSubtitle: {
-    fontSize: 13,
+  receiptDate: {
+    ...typography.body,
+    fontSize: 14,
     color: colors.textSecondary,
-    marginTop: 4,
+    marginTop: 4
   },
   divider: {
     height: 1,
     backgroundColor: colors.border,
-    borderStyle: 'dashed',
-    marginVertical: spacing.lg,
+    marginVertical: spacing.xl
   },
-  productInfo: {
+  section: {
+    marginBottom: spacing.xl
+  },
+  sectionTitle: {
+    ...typography.caption,
+    fontSize: 10,
+    fontWeight: '900',
+    color: colors.textCaption,
+    marginBottom: spacing.md,
+    letterSpacing: 1.5
+  },
+  productCard: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: colors.surface,
+    padding: spacing.md,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border
   },
   productImage: {
-    width: 70,
-    height: 70,
-    borderRadius: radius.md,
-    backgroundColor: colors.background,
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    backgroundColor: colors.backgroundSecondary
   },
   placeholderImage: {
-    width: 70,
-    height: 70,
-    borderRadius: radius.md,
-    backgroundColor: colors.background,
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    backgroundColor: colors.backgroundSecondary,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.border
   },
-  productDetails: {
+  productInfo: {
     flex: 1,
-    paddingLeft: spacing.md,
+    marginLeft: spacing.md,
+    gap: 4
   },
   brand: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: colors.secondary,
-    textTransform: 'uppercase',
+    ...typography.caption,
+    fontSize: 10,
+    fontWeight: '900',
+    color: colors.textSecondary
   },
   model: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    marginVertical: 2,
+    ...typography.body,
+    fontWeight: '900',
+    color: colors.white
   },
   detailsList: {
-    gap: spacing.md,
+    gap: spacing.sm
   },
   detailItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center'
   },
   detailLabel: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    fontWeight: '600',
+    ...typography.caption,
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.textSecondary
   },
   detailValue: {
-    fontSize: 13,
-    color: colors.textPrimary,
+    ...typography.body,
+    fontSize: 12,
     fontWeight: '700',
-    flex: 1,
-    textAlign: 'right',
-    marginLeft: spacing.lg,
+    color: colors.white
   },
-  totalRow: {
+  totalContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    backgroundColor: colors.surface,
+    padding: spacing.lg,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border
   },
   totalLabel: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: colors.textPrimary,
+    ...typography.body,
+    fontWeight: '900',
+    color: colors.textSecondary
   },
   totalValue: {
-    fontSize: 24,
+    ...typography.h2,
+    fontSize: 32,
     fontWeight: '900',
-    color: colors.primary,
-  },
-  decorativeDashes: {
-    height: 1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderStyle: 'dashed',
-    marginVertical: spacing.xl,
-  },
-  footerNote: {
-    fontSize: 12,
-    color: colors.textMuted,
-    textAlign: 'center',
-    fontStyle: 'italic',
+    color: colors.primary
   }
 });

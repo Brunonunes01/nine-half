@@ -1,7 +1,8 @@
-import React, { useCallback } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import Header from '../../components/layout/Header';
 import ScreenContainer from '../../components/layout/ScreenContainer';
 import TransactionCard from '../../components/domain/TransactionCard';
@@ -14,9 +15,12 @@ import { colors } from '../../theme/colors';
 import { radius } from '../../theme/radius';
 import { spacing } from '../../theme/spacing';
 
+type TabType = 'all' | 'buy' | 'sell';
+
 export default function MyTransactionsScreen({ navigation }: any) {
   const { user } = useAuth();
   const { transactions, loadMyTransactions, loading, error } = useTransactions();
+  const [activeTab, setActiveTab] = useState<TabType>('all');
 
   useFocusEffect(
     useCallback(() => {
@@ -25,13 +29,49 @@ export default function MyTransactionsScreen({ navigation }: any) {
     }, [user?.uid, loadMyTransactions])
   );
 
-  if (loading && transactions.length === 0) {
-    return <Loading text="Carregando transacoes..." />;
-  }
+  const handleTransactionPress = (transaction: any) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    navigation.navigate(ROUTES.TRANSACTION_DETAILS, { transactionId: transaction.id });
+  };
+
+  const buyCount = useMemo(
+    () => transactions.filter((item: any) => item.buyerId === user?.uid).length,
+    [transactions, user?.uid]
+  );
+  const sellCount = useMemo(
+    () => transactions.filter((item: any) => item.sellerId === user?.uid).length,
+    [transactions, user?.uid]
+  );
+
+  const filteredTransactions = useMemo(() => {
+    if (!user?.uid) return [];
+    if (activeTab === 'buy') return transactions.filter((item: any) => item.buyerId === user.uid);
+    if (activeTab === 'sell') return transactions.filter((item: any) => item.sellerId === user.uid);
+    return transactions;
+  }, [activeTab, transactions, user?.uid]);
+
+  const emptyState = useMemo(() => {
+    if (activeTab === 'buy') {
+      return {
+        title: 'Sem compras concluidas',
+        description: 'Finalize uma reserva como comprador para ver suas compras aqui.'
+      };
+    }
+    if (activeTab === 'sell') {
+      return {
+        title: 'Sem vendas concluidas',
+        description: 'Quando voce vender um produto, a venda aparecera nesta aba.'
+      };
+    }
+    return {
+      title: 'Sem transacoes',
+      description: 'Conclua suas negociacoes para gerar um historico de compras e vendas.'
+    };
+  }, [activeTab]);
 
   return (
-    <ScreenContainer>
-      <Header title="Minhas transacoes" subtitle="Historico de compras e vendas concluidas." showBack />
+    <ScreenContainer scroll={false} backgroundColor={colors.background}>
+      <Header title="Historico" subtitle="Suas compras e vendas concluidas." showBack />
 
       {error ? (
         <View style={styles.errorBox}>
@@ -40,26 +80,41 @@ export default function MyTransactionsScreen({ navigation }: any) {
         </View>
       ) : null}
 
-      <FlatList
-        data={transactions}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => (
-          <TransactionCard
-            transaction={item}
-            onPress={() => navigation.navigate(ROUTES.TRANSACTION_DETAILS, { transactionId: item.id })}
-          />
-        )}
-        ListEmptyComponent={
-          <EmptyState
-            title="Sem transacoes ainda"
-            description="Finalize reservas para gerar seu historico de transacoes."
-            icon="receipt-outline"
-          />
-        }
-      />
+      <View style={styles.tabsRow}>
+        <TabButton label={`Todas (${transactions.length})`} active={activeTab === 'all'} onPress={() => setActiveTab('all')} />
+        <TabButton label={`Compras (${buyCount})`} active={activeTab === 'buy'} onPress={() => setActiveTab('buy')} />
+        <TabButton label={`Vendas (${sellCount})`} active={activeTab === 'sell'} onPress={() => setActiveTab('sell')} />
+      </View>
+
+      {loading && transactions.length === 0 ? (
+        <Loading text="BUSCANDO HISTORICO..." />
+      ) : (
+        <FlatList
+          data={filteredTransactions}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item }) => <TransactionCard transaction={item} onPress={handleTransactionPress} />}
+          ListEmptyComponent={<EmptyState title={emptyState.title} description={emptyState.description} icon="receipt-outline" />}
+        />
+      )}
     </ScreenContainer>
+  );
+}
+
+function TabButton({
+  label,
+  active,
+  onPress
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable style={[styles.tabButton, active && styles.tabButtonActive]} onPress={onPress}>
+      <Text style={[styles.tabText, active && styles.tabTextActive]}>{label}</Text>
+    </Pressable>
   );
 }
 
@@ -68,14 +123,43 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    backgroundColor: '#FEE2E2',
-    borderRadius: radius.md,
-    padding: spacing.sm,
-    marginBottom: spacing.sm
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderRadius: 8,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.danger
   },
   errorText: {
     color: colors.danger,
-    fontWeight: '600'
+    fontWeight: '700',
+    fontSize: 13
+  },
+  tabsRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.md
+  },
+  tabButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xs,
+    alignItems: 'center'
+  },
+  tabButtonActive: {
+    borderColor: colors.primary
+  },
+  tabText: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '700'
+  },
+  tabTextActive: {
+    color: colors.white
   },
   listContent: {
     paddingBottom: spacing.xxl
