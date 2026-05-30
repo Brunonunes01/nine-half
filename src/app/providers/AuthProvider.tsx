@@ -44,12 +44,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const currentUser = getCurrentUser();
-
-    if (currentUser) {
-      syncUser(currentUser).finally(() => setLoading(false));
-    }
-
     const unsubscribe = onAuthStateChangedListener((authUser) => {
       syncUser(authUser).finally(() => setLoading(false));
     });

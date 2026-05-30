@@ -6,7 +6,7 @@ export const DEFAULT_GLOBAL_FILTERS = {
   marca: '',
   numeracao: '',
   origem: 'todos',
-  hideMyProducts: true,
+  hideMyProducts: false,
   minPrice: '',
   maxPrice: '',
   orderByField: 'createdAt',
