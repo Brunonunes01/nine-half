@@ -69,7 +69,6 @@ export default function GlobalStockScreen({ navigation }: any) {
         onRefresh={refreshProducts}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        stickyHeaderIndices={[0]}
         ListHeaderComponent={
           <View style={styles.stickyHeader}>
             <View style={styles.searchContainer}>

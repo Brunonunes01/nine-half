@@ -213,7 +213,7 @@ export default function ShowcaseScreen({ navigation }: any) {
           </>
         }
         renderItem={({ item }) => {
-          if (showcaseApi.loading) {
+          if (showcaseApi.loading || productsApi.loading) {
             return (
               <View style={styles.cardWrapper}>
                 <ProductCardSkeleton />
@@ -504,6 +504,10 @@ const styles = StyleSheet.create({
   },
   cancelBtnText: {
     ...typography.body,
+    color: colors.textSecondary,
+    fontWeight: '800'
+  }
+});..typography.body,
     color: colors.textSecondary,
     fontWeight: '800'
   }
