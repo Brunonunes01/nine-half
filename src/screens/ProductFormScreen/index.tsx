@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../../components/layout/Header';
 import ScreenContainer from '../../components/layout/ScreenContainer';
 import Button from '../../components/ui/Button';
@@ -15,6 +17,8 @@ import { uploadProductImage } from '../../services/storageService';
 import { radius } from '../../theme/radius';
 import { spacing } from '../../theme/spacing';
 import { colors } from '../../theme/colors';
+import { shadows } from '../../theme/shadows';
+import { typography } from '../../theme/typography';
 import { validateRequired } from '../../utils/validators';
 
 const MAX_IMAGES = 5;
@@ -25,6 +29,8 @@ const EXPIRY_OPTIONS = [
 
 export default function ProductFormScreen({ navigation, route }: any) {
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const { createProduct, updateProduct, loadProductById, selectedProduct, loading } = useProducts();
 
   const mode = route.params?.mode || 'create';
@@ -33,11 +39,13 @@ export default function ProductFormScreen({ navigation, route }: any) {
 
   const [modelo, setModelo] = useState('');
   const [marca, setMarca] = useState('');
+  const [cor, setCor] = useState('');
   const [numeracao, setNumeracao] = useState('');
   const [preco, setPreco] = useState('');
   const [localizacao, setLocalizacao] = useState('');
   const [origem, setOrigem] = useState(PRODUCT_ORIGIN.OWN);
   const [tempoReserva, setTempoReserva] = useState(24);
+  const [descricao, setDescricao] = useState('');
 
   const [remoteImages, setRemoteImages] = useState<string[]>([]);
   const [remotePaths, setRemotePaths] = useState<string[]>([]);
@@ -46,6 +54,7 @@ export default function ProductFormScreen({ navigation, route }: any) {
   const [imageLoading, setImageLoading] = useState(false);
 
   const totalImages = remoteImages.length + localImages.length;
+  const imageBoxSize = (width - (spacing.md * 2) - (spacing.sm * 2)) / 3;
 
   useEffect(() => {
     if (mode !== 'edit' || !productId) return;
@@ -56,11 +65,13 @@ export default function ProductFormScreen({ navigation, route }: any) {
     if (!selectedProduct || mode !== 'edit') return;
     setModelo(selectedProduct.modelo || '');
     setMarca(selectedProduct.marca || '');
+    setCor(selectedProduct.cor || '');
     setNumeracao(String(selectedProduct.numeracao || ''));
     setPreco(String(selectedProduct.preco || ''));
     setLocalizacao(selectedProduct.localizacao || '');
     setOrigem(selectedProduct.origem || PRODUCT_ORIGIN.OWN);
     setTempoReserva(selectedProduct.tempoReserva || 24);
+    setDescricao(selectedProduct.descricao || '');
     const existingImages = Array.isArray(selectedProduct.imagens)
       ? selectedProduct.imagens
       : (selectedProduct.imagemUrl ? [selectedProduct.imagemUrl] : []);
@@ -73,7 +84,8 @@ export default function ProductFormScreen({ navigation, route }: any) {
 
   async function handlePickImage() {
     if (totalImages >= MAX_IMAGES) {
-      setFormError(`Limite maximo de ${MAX_IMAGES} imagens por produto.`);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      setFormError(`Limite máximo de ${MAX_IMAGES} imagens atingido.`);
       return;
     }
 
@@ -82,7 +94,7 @@ export default function ProductFormScreen({ navigation, route }: any) {
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert('Permissao negada', 'Precisamos de acesso a galeria para selecionar imagens.');
+        Alert.alert('Permissão Negada', 'Precisamos de acesso à galeria para selecionar fotos.');
         return;
       }
 
@@ -100,31 +112,35 @@ export default function ProductFormScreen({ navigation, route }: any) {
         { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
       );
 
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setLocalImages((prev) => [...prev, compressed.uri].slice(0, MAX_IMAGES));
     } catch (_) {
-      setFormError('Erro ao selecionar imagem.');
+      setFormError('Erro ao carregar imagem.');
     } finally {
       setImageLoading(false);
     }
   }
 
   function removeRemoteImage(index: number) {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setRemoteImages((prev) => prev.filter((_, i) => i !== index));
     setRemotePaths((prev) => prev.filter((_, i) => i !== index));
   }
 
   function removeLocalImage(index: number) {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setLocalImages((prev) => prev.filter((_, i) => i !== index));
   }
 
   async function handleSubmit() {
     setFormError('');
     if (!validateRequired(modelo) || !validateRequired(marca) || !validateRequired(preco)) {
-      setFormError('Preencha os campos obrigatorios.');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setFormError('Campos com * são obrigatórios.');
       return;
     }
     if (mode === 'create' && !showcaseId) {
-      setFormError('Vitrine nao encontrada.');
+      setFormError('Erro de sistema: Vitrine não encontrada.');
       return;
     }
 
@@ -132,11 +148,13 @@ export default function ProductFormScreen({ navigation, route }: any) {
       const baseData = {
         modelo: modelo.trim(),
         marca: marca.trim(),
+        cor: cor.trim(),
         numeracao: numeracao.trim(),
         preco: preco.trim(),
         localizacao: localizacao.trim(),
         origem: origem.trim(),
-        tempoReserva: Number(tempoReserva)
+        tempoReserva: Number(tempoReserva),
+        descricao: descricao.trim()
       };
 
       let currentId = productId;
@@ -177,129 +195,216 @@ export default function ProductFormScreen({ navigation, route }: any) {
         imagePath: finalPaths[0] || ''
       });
 
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       navigation.goBack();
     } catch (err: any) {
-      setFormError(err?.message || 'Erro ao salvar produto.');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setFormError(err?.message || 'Erro ao salvar informações.');
     }
   }
 
   return (
-    <ScreenContainer scroll>
-      <Header title={mode === 'edit' ? 'Editar Sneaker' : 'Novo Sneaker'} showBack />
+    <View style={styles.flex}>
+      <ScreenContainer scroll backgroundColor={colors.background}>
+        <Header title={mode === 'edit' ? 'Editar Par' : 'Novo Par'} showBack />
 
-      <View style={styles.form}>
-        <Text style={styles.sectionLabel}>IMAGENS ({totalImages}/{MAX_IMAGES})</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.imagesRow}>
-          {remoteImages.map((uri, index) => (
-            <View key={`remote-${index}`} style={styles.imageBox}>
-              <Image source={{ uri }} style={styles.imageThumb} />
-              <Pressable style={styles.removeBtn} onPress={() => removeRemoteImage(index)}>
-                <Ionicons name="close-circle" size={22} color={colors.danger} />
+        <View style={styles.content}>
+          <Text style={styles.sectionTitle}>GALERIA ({totalImages}/{MAX_IMAGES})</Text>
+          
+          <View style={styles.imageGrid}>
+            {remoteImages.map((uri, index) => (
+              <View key={`remote-${index}`} style={[styles.imageBox, { width: imageBoxSize, height: imageBoxSize }]}>
+                <Image source={{ uri }} style={styles.imageThumb} />
+                <Pressable style={styles.removeBtn} onPress={() => removeRemoteImage(index)}>
+                  <Ionicons name="close" size={16} color={colors.white} />
+                </Pressable>
+              </View>
+            ))}
+            {localImages.map((uri, index) => (
+              <View key={`local-${index}`} style={[styles.imageBox, { width: imageBoxSize, height: imageBoxSize }]}>
+                <Image source={{ uri }} style={styles.imageThumb} />
+                <Pressable style={styles.removeBtn} onPress={() => removeLocalImage(index)}>
+                  <Ionicons name="close" size={16} color={colors.white} />
+                </Pressable>
+              </View>
+            ))}
+            {totalImages < MAX_IMAGES && (
+              <Pressable 
+                style={[styles.addImageBox, { width: imageBoxSize, height: imageBoxSize }]} 
+                onPress={handlePickImage} 
+                disabled={imageLoading}
+              >
+                <Ionicons name="add" size={32} color={colors.textCaption} />
               </Pressable>
+            )}
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>INFORMAÇÕES BÁSICAS</Text>
+            <Input label="SNEAKER / MODELO *" value={modelo} onChangeText={setModelo} placeholder="Ex: Jordan 1 High Travis Scott" />
+            <Input label="MARCA *" value={marca} onChangeText={setMarca} placeholder="Ex: Nike" />
+            <Input label="COR" value={cor} onChangeText={setCor} placeholder="Ex: Preto e vermelho" />
+            
+            <View style={styles.row}>
+              <View style={styles.col}>
+                <Input label="TAMANHO *" value={numeracao} onChangeText={setNumeracao} keyboardType="numeric" placeholder="Ex: 42" />
+              </View>
+              <View style={styles.col}>
+                <Input label="PREÇO (R$) *" value={preco} onChangeText={setPreco} keyboardType="decimal-pad" placeholder="0,00" />
+              </View>
             </View>
-          ))}
-          {localImages.map((uri, index) => (
-            <View key={`local-${index}`} style={styles.imageBox}>
-              <Image source={{ uri }} style={styles.imageThumb} />
-              <Pressable style={styles.removeBtn} onPress={() => removeLocalImage(index)}>
-                <Ionicons name="close-circle" size={22} color={colors.danger} />
-              </Pressable>
+            
+            <Input label="LOCALIZAÇÃO" value={localizacao} onChangeText={setLocalizacao} placeholder="Cidade/Estado" />
+            <Input label="DESCRIÇÃO COMPLETA" value={descricao} onChangeText={setDescricao} placeholder="Condição, box, acessórios, etc..." />
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>TEMPO DE RESERVA (H)</Text>
+            <View style={styles.expiryGrid}>
+              {EXPIRY_OPTIONS.map((opt) => (
+                <Pressable 
+                  key={opt.value} 
+                  style={[styles.expiryBtn, tempoReserva === opt.value && styles.expiryBtnActive]} 
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setTempoReserva(opt.value);
+                  }}
+                >
+                  <Text style={[styles.expiryText, tempoReserva === opt.value && styles.expiryTextActive]}>{opt.label}</Text>
+                </Pressable>
+              ))}
             </View>
-          ))}
-        </ScrollView>
-        {totalImages < MAX_IMAGES ? <ImagePickerButton onPress={handlePickImage} loading={imageLoading} /> : null}
+          </View>
 
-        <Text style={styles.sectionLabel}>INFORMACOES BASICAS</Text>
-        <Input label="Modelo *" value={modelo} onChangeText={setModelo} />
-        <Input label="Marca *" value={marca} onChangeText={setMarca} />
-        <View style={styles.row}>
-          <View style={styles.col}><Input label="Tamanho *" value={numeracao} onChangeText={setNumeracao} keyboardType="numeric" /></View>
-          <View style={styles.col}><Input label="Preco (R$) *" value={preco} onChangeText={setPreco} keyboardType="decimal-pad" /></View>
+          {formError ? <Text style={styles.errorText}>{formError}</Text> : null}
+          <View style={styles.spacer} />
         </View>
-        <Input label="Localizacao (Cidade/Estado)" value={localizacao} onChangeText={setLocalizacao} />
+      </ScreenContainer>
 
-        <Text style={styles.sectionLabel}>ESTRATEGIA DE VENDA</Text>
-        <View style={styles.optionsGrid}>
-          {EXPIRY_OPTIONS.map((opt) => (
-            <Pressable key={opt.value} style={[styles.optBtn, tempoReserva === opt.value && styles.optBtnActive]} onPress={() => setTempoReserva(opt.value)}>
-              <Text style={[styles.optText, tempoReserva === opt.value && styles.optTextActive]}>{opt.label}</Text>
-            </Pressable>
-          ))}
-        </View>
-
-        {formError ? <Text style={styles.errorText}>{formError}</Text> : null}
-        <Button title={mode === 'edit' ? 'Salvar alteracoes' : 'Cadastrar tenis'} onPress={handleSubmit} loading={loading || imageLoading} />
+      <View style={[styles.fixedFooter, { paddingBottom: insets.bottom + spacing.md }]}>
+        <Button 
+          title={mode === 'edit' ? 'SALVAR ALTERAÇÕES' : 'CADASTRAR EM ESTOQUE'} 
+          onPress={handleSubmit} 
+          loading={loading || imageLoading} 
+        />
       </View>
-    </ScreenContainer>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  form: { paddingBottom: spacing.xxl },
-  sectionLabel: {
-    fontWeight: '800',
-    color: colors.textSecondary,
-    marginBottom: spacing.sm,
-    marginTop: spacing.lg,
-    textTransform: 'uppercase'
+  flex: {
+    flex: 1,
+    backgroundColor: colors.background,
   },
-  imagesRow: {
+  content: {
+    paddingTop: spacing.md,
+  },
+  section: {
+    marginTop: spacing.xl,
+  },
+  sectionTitle: {
+    ...typography.caption,
+    fontSize: 11,
+    fontWeight: '900',
+    color: colors.textSecondary,
+    marginBottom: spacing.md,
+    letterSpacing: 1.5,
+  },
+  imageGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.sm,
-    paddingBottom: spacing.sm
   },
   imageBox: {
-    width: 90,
-    height: 90,
-    borderRadius: radius.md,
+    borderRadius: 8,
     overflow: 'hidden',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.border
+    borderColor: colors.border,
   },
   imageThumb: {
     width: '100%',
-    height: '100%'
+    height: '100%',
+  },
+  addImageBox: {
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: colors.border,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
   },
   removeBtn: {
     position: 'absolute',
-    top: 2,
-    right: 2,
-    backgroundColor: colors.white,
-    borderRadius: 11
+    top: 4,
+    right: 4,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)'
   },
   row: {
     flexDirection: 'row',
-    gap: spacing.md
+    gap: spacing.md,
   },
   col: {
-    flex: 1
+    flex: 1,
   },
-  optionsGrid: {
+  expiryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: spacing.lg
+    gap: spacing.sm,
   },
-  optBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: radius.md,
+  expiryBtn: {
+    flex: 1,
+    minWidth: '30%',
+    height: 48,
+    borderRadius: 8,
     borderWidth: 1.5,
-    borderColor: colors.border
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
   },
-  optBtnActive: {
-    borderColor: colors.secondary,
-    backgroundColor: colors.secondarySoft
+  expiryBtnActive: {
+    borderColor: colors.primary,
+    backgroundColor: 'rgba(249, 115, 22, 0.1)',
   },
-  optText: {
-    fontWeight: '700',
-    color: colors.textSecondary
+  expiryText: {
+    ...typography.body,
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.textSecondary,
   },
-  optTextActive: {
-    color: colors.secondary
+  expiryTextActive: {
+    color: colors.primary,
   },
   errorText: {
+    ...typography.caption,
     color: colors.danger,
     textAlign: 'center',
-    marginTop: spacing.md
+    marginTop: spacing.xl,
+    fontWeight: '800',
+    letterSpacing: 0.5
+  },
+  spacer: {
+    height: 100,
+  },
+  fixedFooter: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   }
 });

@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import EmptyState from '../../components/ui/EmptyState';
@@ -17,10 +19,14 @@ import { colors } from '../../theme/colors';
 import { radius } from '../../theme/radius';
 import { shadows } from '../../theme/shadows';
 import { spacing } from '../../theme/spacing';
+import { typography } from '../../theme/typography';
+import { formatCurrencyBRL, formatSizeBR } from '../../utils/formatters';
 
 export default function ProductDetailsScreen({ navigation, route }: any) {
   const productId = route.params?.productId;
   const source = route.params?.source;
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const { user } = useAuth();
   const { selectedProduct, loadProductById, loading } = useProducts();
   const { reserveProduct, loading: reserving } = useReservations();
@@ -42,8 +48,8 @@ export default function ProductDetailsScreen({ navigation, route }: any) {
     setSelectedImageIndex(0);
   }, [selectedProduct?.id]);
 
-  if (loading && !selectedProduct) return <Loading text="Carregando produto..." />;
-  if (!selectedProduct) return <EmptyState title="Produto nao encontrado" />;
+  if (loading && !selectedProduct) return <Loading text="CARREGANDO DETALHES..." />;
+  if (!selectedProduct) return <EmptyState title="PRODUTO NÃO ENCONTRADO" />;
 
   const productImages = Array.isArray(selectedProduct.imagens) && selectedProduct.imagens.length > 0
     ? selectedProduct.imagens
@@ -56,219 +62,337 @@ export default function ProductDetailsScreen({ navigation, route }: any) {
 
   async function handleReserve() {
     if (!isProfileComplete) {
-      Alert.alert('Perfil incompleto', 'Complete CPF e endereco no perfil para reservar.', [
-        { text: 'Ir para perfil', onPress: () => navigation.navigate(ROUTES.PROFILE) },
-        { text: 'Agora nao', style: 'cancel' }
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      Alert.alert('Perfil Incompleto', 'Complete seus dados no perfil para realizar uma reserva.', [
+        { text: 'Ir para Perfil', onPress: () => navigation.navigate(ROUTES.PROFILE) },
+        { text: 'Agora não', style: 'cancel' }
       ]);
       return;
     }
 
     try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       await reserveProduct({ productId: selectedProduct.id, buyerId: user.uid });
-      Alert.alert('Reserva criada', 'A reserva foi criada com sucesso.');
-    } catch (_) {}
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert('Reserva Criada', 'Sua reserva foi solicitada com sucesso!');
+    } catch (_) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    }
   }
 
   return (
-    <ScreenContainer scroll>
-      <Header title="Detalhes do produto" showBack />
+    <View style={styles.flex}>
+      <ScreenContainer scroll withPadding={false} backgroundColor={colors.background}>
+        <View style={styles.headerPadding}>
+          <Header title="Detalhes" showBack />
+        </View>
 
-      <View style={styles.imageArea}>
-        {selectedImage ? (
-          <Image source={{ uri: selectedImage }} style={styles.image} resizeMode="cover" />
-        ) : (
-          <View style={styles.imagePlaceholder}>
-            <Ionicons name="image-outline" size={44} color={colors.textMuted} />
-            <Text style={styles.placeholderText}>Sem imagem</Text>
+        <View style={[styles.hero, { height: width * 0.9 }]}>
+          {selectedImage ? (
+            <Image source={{ uri: selectedImage }} style={styles.heroImage} resizeMode="contain" />
+          ) : (
+            <View style={styles.placeholder}>
+              <Ionicons name="image-outline" size={64} color={colors.border} />
+            </View>
+          )}
+          <View style={styles.heroBadge}>
+            <Badge label={selectedProduct.status} />
           </View>
+        </View>
+
+        {productImages.length > 1 && (
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false} 
+            contentContainerStyle={styles.gallery}
+          >
+            {productImages.map((uri: string, index: number) => (
+              <Pressable
+                key={`${uri}-${index}`}
+                style={[styles.thumb, selectedImageIndex === index && styles.thumbActive]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setSelectedImageIndex(index);
+                }}
+              >
+                <Image source={{ uri }} style={styles.thumbImage} />
+              </Pressable>
+            ))}
+          </ScrollView>
         )}
-        <View style={styles.badgeWrap}>
-          <Badge label={selectedProduct.status} />
+
+        <View style={styles.content}>
+          <View style={styles.mainInfo}>
+            <View style={styles.brandRow}>
+              <Text style={styles.brand}>{selectedProduct.marca?.toUpperCase()}</Text>
+              <Text style={styles.origem}>{selectedProduct.origem?.toUpperCase()}</Text>
+            </View>
+            <Text style={styles.model}>{selectedProduct.modelo}</Text>
+            <Text style={styles.price}>{formatCurrencyBRL(selectedProduct.preco)}</Text>
+          </View>
+
+          <View style={styles.grid}>
+            <View style={styles.gridItem}>
+              <Text style={styles.gridLabel}>TAMANHO</Text>
+              <Text style={styles.gridValue}>{formatSizeBR(selectedProduct.numeracao)}</Text>
+            </View>
+            <View style={styles.gridItem}>
+              <Text style={styles.gridLabel}>COR</Text>
+              <Text style={styles.gridValue}>{selectedProduct.cor || '-'}</Text>
+            </View>
+            <View style={styles.gridItem}>
+              <Text style={styles.gridLabel}>RESERVA</Text>
+              <Text style={styles.gridValue}>{selectedProduct.tempoReserva || 24}H</Text>
+            </View>
+            <View style={styles.gridItem}>
+              <Text style={styles.gridLabel}>CONDIÇÃO</Text>
+              <Badge label={selectedProduct.condicao || 'novo'} />
+            </View>
+          </View>
+
+          <View style={styles.divider} />
+
+          {!isOwner && seller && (
+            <View style={styles.sellerSection}>
+              <Text style={styles.sectionTitle}>VENDEDOR</Text>
+              <View style={styles.sellerCard}>
+                <View style={styles.sellerAvatar}>
+                  <Text style={styles.avatarText}>{seller.nome?.charAt(0)}</Text>
+                </View>
+                <View style={styles.sellerInfo}>
+                  <Text style={styles.sellerName}>{seller.nome?.toUpperCase()}</Text>
+                  <Text style={styles.sellerLocation}>
+                    <Ionicons name="location-outline" size={12} color={colors.textSecondary} /> {seller.cidade || 'Brasil'}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {selectedProduct.descricao && (
+            <View style={styles.descriptionSection}>
+              <Text style={styles.sectionTitle}>SOBRE O PRODUTO</Text>
+              <Text style={styles.description}>{selectedProduct.descricao}</Text>
+            </View>
+          )}
+          
+          <View style={styles.spacer} />
         </View>
-      </View>
+      </ScreenContainer>
 
-      {productImages.length > 1 ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.gallery}>
-          {productImages.map((uri: string, index: number) => (
-            <Pressable
-              key={`${uri}-${index}`}
-              style={[styles.thumbWrap, selectedImageIndex === index && styles.thumbWrapActive]}
-              onPress={() => setSelectedImageIndex(index)}
-            >
-              <Image source={{ uri }} style={styles.thumb} />
-            </Pressable>
-          ))}
-        </ScrollView>
-      ) : null}
-
-      <View style={styles.infoCard}>
-        <Text style={styles.brand}>{selectedProduct.marca}</Text>
-        <Text style={styles.model}>{selectedProduct.modelo}</Text>
-        <Text style={styles.price}>R$ {selectedProduct.preco}</Text>
-
-        <View style={styles.metaGrid}>
-          <View style={styles.metaItem}>
-            <Text style={styles.metaLabel}>Numeracao</Text>
-            <Text style={styles.metaValue}>{selectedProduct.numeracao || '-'}</Text>
-          </View>
-          <View style={styles.metaItem}>
-            <Text style={styles.metaLabel}>Origem</Text>
-            <Text style={styles.metaValue}>{selectedProduct.origem || '-'}</Text>
-          </View>
-          <View style={styles.metaItem}>
-            <Text style={styles.metaLabel}>Reserva</Text>
-            <Text style={styles.metaValue}>{selectedProduct.tempoReserva || 24}h</Text>
-          </View>
-        </View>
-
-        {!isOwner ? (
-          <View style={styles.sellerBox}>
-            <Text style={styles.sellerTitle}>Vendedor</Text>
-            <Text style={styles.sellerName}>{seller?.nome || 'Lojista'}</Text>
-            <Text style={styles.sellerMeta}>{seller?.cidade || 'Sem cidade definida'}</Text>
-          </View>
-        ) : null}
-      </View>
-
-      <View style={styles.actions}>
+      <View style={[styles.fixedFooter, { paddingBottom: insets.bottom + spacing.md }]}>
         {canReserve ? (
-          <Button title="Reservar produto" variant="secondary" onPress={handleReserve} loading={reserving} />
+          <Button title="RESERVAR SNEAKER" onPress={handleReserve} loading={reserving} />
         ) : isOwner ? (
           <Button
-            title="Editar produto"
-            variant="outline"
+            title="EDITAR ANÚNCIO"
+            variant="secondary"
             onPress={() => navigation.navigate(ROUTES.PRODUCT_FORM, { mode: 'edit', productId: selectedProduct.id })}
           />
-        ) : null}
+        ) : (
+          <Button
+            title={selectedProduct.status === PRODUCT_STATUS.AVAILABLE ? "LOGAR PARA RESERVAR" : "INDISPONÍVEL"}
+            variant="secondary"
+            disabled
+            onPress={() => {}}
+          />
+        )}
       </View>
-    </ScreenContainer>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  imageArea: {
-    height: 320,
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-    backgroundColor: '#EEF2F7',
-    ...shadows.card
-  },
-  image: {
-    width: '100%',
-    height: '100%'
-  },
-  imagePlaceholder: {
+  flex: {
     flex: 1,
+    backgroundColor: colors.background,
+  },
+  headerPadding: {
+    paddingHorizontal: spacing.md,
+  },
+  hero: {
+    width: '100%',
+    backgroundColor: colors.backgroundSecondary,
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    position: 'relative',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border
   },
-  placeholderText: {
-    marginTop: spacing.xs,
-    color: colors.textMuted,
-    fontWeight: '700'
+  heroImage: {
+    width: '85%',
+    height: '85%',
   },
-  badgeWrap: {
+  placeholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroBadge: {
     position: 'absolute',
-    right: spacing.sm,
-    top: spacing.sm
+    top: spacing.md,
+    right: spacing.md,
   },
   gallery: {
-    gap: spacing.xs,
-    paddingTop: spacing.sm
-  },
-  thumbWrap: {
-    width: 68,
-    height: 68,
-    borderRadius: radius.sm,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.border
-  },
-  thumbWrapActive: {
-    borderColor: colors.secondary,
-    borderWidth: 2
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    gap: spacing.sm,
   },
   thumb: {
-    width: '100%',
-    height: '100%'
-  },
-  infoCard: {
-    marginTop: spacing.md,
+    width: 64,
+    height: 64,
+    borderRadius: 8,
     backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    ...shadows.soft
+    borderWidth: 2,
+    borderColor: colors.transparent,
+    overflow: 'hidden',
+  },
+  thumbActive: {
+    borderColor: colors.primary,
+  },
+  thumbImage: {
+    width: '100%',
+    height: '100%',
+  },
+  content: {
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+  },
+  mainInfo: {
+    marginBottom: spacing.xl,
+  },
+  brandRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   brand: {
-    color: colors.secondary,
+    ...typography.caption,
     fontSize: 12,
+    fontWeight: '900',
+    color: colors.textSecondary,
+    letterSpacing: 1.5,
+  },
+  origem: {
+    ...typography.caption,
+    fontSize: 10,
     fontWeight: '800',
-    textTransform: 'uppercase'
+    color: colors.accent,
   },
   model: {
-    marginTop: 2,
-    color: colors.textPrimary,
-    fontSize: 28,
-    fontWeight: '900'
+    ...typography.h1,
+    fontSize: 34,
+    fontWeight: '900',
+    marginTop: 4,
+    lineHeight: 38,
+    color: colors.white
   },
   price: {
-    marginTop: spacing.xs,
-    color: colors.primary,
+    ...typography.price,
     fontSize: 30,
+    marginTop: spacing.sm,
+    color: colors.primary,
     fontWeight: '900'
   },
-  metaGrid: {
-    marginTop: spacing.md,
+  grid: {
     flexDirection: 'row',
-    gap: spacing.sm
+    flexWrap: 'wrap',
+    gap: spacing.md,
+    marginBottom: spacing.xl,
   },
-  metaItem: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
+  gridItem: {
+    width: '48%',
+    padding: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radius.md,
-    padding: spacing.sm
+    alignItems: 'center',
   },
-  metaLabel: {
-    color: colors.textMuted,
+  gridLabel: {
+    ...typography.caption,
+    fontSize: 9,
+    fontWeight: '900',
+    color: colors.textCaption,
+    marginBottom: 4,
+    letterSpacing: 1
+  },
+  gridValue: {
+    ...typography.body,
+    fontWeight: '900',
+    color: colors.white,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginBottom: spacing.xl,
+  },
+  sectionTitle: {
+    ...typography.caption,
     fontSize: 11,
-    fontWeight: '700',
-    textTransform: 'uppercase'
+    fontWeight: '900',
+    color: colors.textSecondary,
+    marginBottom: spacing.md,
+    letterSpacing: 1.5,
   },
-  metaValue: {
-    marginTop: 2,
-    color: colors.textPrimary,
-    fontSize: 14,
-    fontWeight: '800'
+  sellerSection: {
+    marginBottom: spacing.xl,
   },
-  sellerBox: {
-    marginTop: spacing.md,
-    backgroundColor: colors.secondarySoft,
-    borderRadius: radius.md,
-    padding: spacing.md
+  sellerCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  sellerTitle: {
-    color: colors.textMuted,
-    fontSize: 11,
-    fontWeight: '700',
-    textTransform: 'uppercase'
+  sellerAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
+  },
+  avatarText: {
+    color: colors.black,
+    fontSize: 20,
+    fontWeight: '900',
+  },
+  sellerInfo: {
+    flex: 1,
   },
   sellerName: {
-    marginTop: 2,
-    color: colors.textPrimary,
-    fontSize: 16,
-    fontWeight: '800'
+    ...typography.body,
+    fontWeight: '900',
+    color: colors.white,
   },
-  sellerMeta: {
+  sellerLocation: {
+    ...typography.caption,
     marginTop: 2,
+    fontSize: 11
+  },
+  descriptionSection: {
+    marginBottom: spacing.xxl,
+  },
+  description: {
+    ...typography.body,
+    lineHeight: 24,
     color: colors.textSecondary,
-    fontSize: 13
   },
-  actions: {
-    marginTop: spacing.md,
-    marginBottom: spacing.xl
+  spacer: {
+    height: 120,
+  },
+  fixedFooter: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: colors.surface, // #1E1E1E
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   }
 });
