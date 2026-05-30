@@ -13,6 +13,8 @@ import GlobalStockScreen from '../../screens/GlobalStockScreen';
 import MyReservationsScreen from '../../screens/MyReservationsScreen';
 import MyTransactionsScreen from '../../screens/MyTransactionsScreen';
 import TransactionDetailsScreen from '../../screens/TransactionDetailsScreen';
+import AdminDashboardScreen from '../../screens/Admin/AdminDashboardScreen';
+import AdminUsersScreen from '../../screens/Admin/AdminUsersScreen';
 import Loading from '../../components/ui/Loading';
 import { colors } from '../../theme/colors';
 
@@ -46,6 +48,8 @@ function PrivateNavigator() {
       <Stack.Screen name={ROUTES.MY_RESERVATIONS} component={MyReservationsScreen} />
       <Stack.Screen name={ROUTES.MY_TRANSACTIONS} component={MyTransactionsScreen} />
       <Stack.Screen name={ROUTES.TRANSACTION_DETAILS} component={TransactionDetailsScreen} />
+      <Stack.Screen name={ROUTES.ADMIN_DASHBOARD} component={AdminDashboardScreen} />
+      <Stack.Screen name={ROUTES.ADMIN_USERS} component={AdminUsersScreen} />
     </Stack.Navigator>
   );
 }

@@ -9,14 +9,32 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    function isAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.tipo == 'admin';
+    }
+
+    function isValidUserType(tipo) {
+      return tipo in ['admin', 'lojista', 'comum'];
+    }
+
     // Perfil publico (visivel para usuarios autenticados)
     match /users/{userId} {
       allow get, list: if isSignedIn();
       allow create: if isOwner(userId) && request.resource.data.id == request.auth.uid;
-      allow update: if isOwner(userId)
+      allow update: if (
+        isOwner(userId)
         && request.resource.data.id == resource.data.id
         && request.resource.data.email == resource.data.email
-        && request.resource.data.tipo == resource.data.tipo;
+        && request.resource.data.tipo == resource.data.tipo
+      ) || (
+        isAdmin()
+        && request.resource.data.id == resource.data.id
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.createdAt == resource.data.createdAt
+        && isValidUserType(request.resource.data.tipo)
+      );
       allow delete: if false;
     }
 

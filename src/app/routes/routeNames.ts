@@ -9,5 +9,7 @@ export const ROUTES = {
   PRODUCT_DETAILS: 'ProductDetails',
   MY_RESERVATIONS: 'MyReservations',
   MY_TRANSACTIONS: 'MyTransactions',
-  TRANSACTION_DETAILS: 'TransactionDetails'
+  TRANSACTION_DETAILS: 'TransactionDetails',
+  ADMIN_DASHBOARD: 'AdminDashboard',
+  ADMIN_USERS: 'AdminUsers'
 };
