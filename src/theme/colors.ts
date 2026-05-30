@@ -1,21 +1,33 @@
 export const colors = {
-  background: '#F6F7FB',
-  surface: '#FFFFFF',
-  primary: '#0F172A',
-  primarySoft: '#1E293B',
-  secondary: '#F97316',
-  secondarySoft: '#FFF1E8',
-  accent: '#22C55E',
-  textPrimary: '#0F172A',
-  textSecondary: '#475569',
-  textMuted: '#94A3B8',
-  border: '#E2E8F0',
-  success: '#16A34A',
-  warning: '#D97706',
-  danger: '#DC2626',
-  error: '#DC2626',
-  muted: '#94A3B8',
+  // Backgrounds
+  background: '#000000',
+  backgroundSecondary: '#121212',
+  
+  // Surfaces
+  surface: '#1E1E1E',
+  border: '#2D2D2D',
+  
+  // Typography
+  textPrimary: '#FFFFFF',
+  textSecondary: '#A1A1AA',
+  textCaption: '#71717A',
+  
+  // Actions
+  primary: '#F97316', // Orange Hype
+  primaryText: '#FFFFFF',
+  
+  // Highlights
+  accent: '#F97316',
+  
+  // Status
+  success: '#10B981',
+  warning: '#F59E0B',
+  danger: '#EF4444',
+  error: '#EF4444',
+  
+  // Utilities
   white: '#FFFFFF',
   black: '#000000',
-  transparent: 'transparent'
+  transparent: 'transparent',
+  imageBackground: '#1E1E1E'
 };

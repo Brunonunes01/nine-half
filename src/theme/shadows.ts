@@ -1,32 +1,27 @@
-import { colors } from './colors';
-
 export const shadows = {
+  none: {
+    elevation: 0,
+    shadowOpacity: 0,
+  },
   soft: {
-    shadowColor: '#020617',
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    elevation: 2
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  card: {
-    shadowColor: '#020617',
-    shadowOpacity: 0.14,
-    shadowRadius: 16,
+  medium: {
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
-    elevation: 5
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
   },
-  floating: {
-    shadowColor: '#020617',
-    shadowOpacity: 0.2,
-    shadowRadius: 24,
+  heavy: {
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 12 },
-    elevation: 9
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 12,
   },
-  glow: {
-    shadowColor: colors.secondary,
-    shadowOpacity: 0.28,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 8
-  }
 };

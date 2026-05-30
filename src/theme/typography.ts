@@ -1,28 +1,37 @@
+import { TextStyle } from 'react-native';
+
 export const typography = {
   h1: {
-    fontSize: 34,
+    fontSize: 32,
     fontWeight: '900' as const,
-    letterSpacing: -0.7
-  },
+    color: '#FFFFFF',
+    letterSpacing: -1,
+  } as TextStyle,
   h2: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '800' as const,
-    letterSpacing: -0.4
-  },
+    color: '#FFFFFF',
+    letterSpacing: -0.5,
+  } as TextStyle,
   h3: {
     fontSize: 20,
     fontWeight: '700' as const,
-    letterSpacing: -0.2
-  },
+    color: '#FFFFFF',
+  } as TextStyle,
   body: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '400' as const,
-    lineHeight: 22
-  },
+    color: '#A1A1AA',
+  } as TextStyle,
   caption: {
-    fontSize: 12,
-    fontWeight: '700' as const,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 0.8
-  }
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#71717A',
+    letterSpacing: 0.5,
+  } as TextStyle,
+  price: {
+    fontSize: 18,
+    fontWeight: '900' as const,
+    color: '#F97316',
+  } as TextStyle,
 };
