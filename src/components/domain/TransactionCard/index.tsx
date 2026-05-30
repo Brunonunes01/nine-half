@@ -1,10 +1,11 @@
 import React from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import { getPaymentMethodLabel } from '../../../constants/paymentMethods';
 import { colors } from '../../../theme/colors';
-import { radius } from '../../../theme/radius';
-import { shadows } from '../../../theme/shadows';
 import { spacing } from '../../../theme/spacing';
+import { formatCurrencyBRL, formatSizeBR } from '../../../utils/formatters';
 import Badge from '../../ui/Badge';
 
 export default function TransactionCard({
@@ -18,29 +19,43 @@ export default function TransactionCard({
     ? new Date(transaction.completedAt.seconds * 1000).toLocaleDateString('pt-BR')
     : '-';
 
+  const handlePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onPress?.(transaction);
+  };
+
   return (
-    <Pressable style={({ pressed }) => [styles.card, pressed && styles.pressed]} onPress={() => onPress?.(transaction)}>
-      <View style={styles.row}>
+    <Pressable style={({ pressed }) => [styles.card, pressed && styles.pressed]} onPress={handlePress}>
+      <View style={styles.imageContainer}>
         {transaction?.productImageUrl ? (
           <Image source={{ uri: transaction.productImageUrl }} style={styles.image} resizeMode="cover" />
         ) : (
           <View style={styles.placeholder}>
-            <Ionicons name="image-outline" size={24} color={colors.textMuted} />
+            <Ionicons name="image-outline" size={24} color={colors.textCaption} />
           </View>
         )}
-        <View style={styles.info}>
-          <View style={styles.top}>
-            <Text style={styles.brand}>{transaction?.productBrand || 'Sneaker'}</Text>
-            <Badge label={transaction.status} />
-          </View>
-          <Text style={styles.title} numberOfLines={1}>{transaction?.productModel || 'Produto'}</Text>
-          <Text style={styles.price}>R$ {transaction?.valor || '0,00'}</Text>
-          <View style={styles.metaRow}>
-            <Ionicons name="checkmark-circle-outline" size={12} color={colors.success} />
-            <Text style={styles.metaText}>{date}</Text>
-          </View>
-        </View>
       </View>
+
+      <View style={styles.info}>
+        <View style={styles.header}>
+          <Text style={styles.brand}>{transaction?.productBrand?.toUpperCase() || 'SNEAKER'}</Text>
+          <Badge label={transaction.status} />
+        </View>
+        <Text style={styles.title} numberOfLines={1}>
+          {transaction?.productModel || 'Item'}
+        </Text>
+        <Text style={styles.price}>{formatCurrencyBRL(transaction?.valor)}</Text>
+        <Text style={styles.productMeta}>
+          {formatSizeBR(transaction?.productSize)}{transaction?.productColor ? ` • ${transaction.productColor}` : ''}
+        </Text>
+
+        <View style={styles.meta}>
+          <Ionicons name="checkmark-circle" size={14} color={colors.success} />
+          <Text style={styles.metaText}>Concluida em {date}</Text>
+        </View>
+        <Text style={styles.paymentText}>Pagamento: {getPaymentMethodLabel(transaction?.paymentMethod)}</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={colors.border} />
     </Pressable>
   );
 }
@@ -48,70 +63,83 @@ export default function TransactionCard({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
+    borderRadius: 12,
+    marginBottom: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radius.lg,
-    marginBottom: spacing.md,
-    ...shadows.soft
+    padding: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center'
   },
   pressed: {
-    opacity: 0.92
+    opacity: 0.9,
+    transform: [{ scale: 0.99 }]
   },
-  row: {
-    flexDirection: 'row',
-    padding: spacing.md
+  imageContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    backgroundColor: colors.backgroundSecondary,
+    overflow: 'hidden'
   },
   image: {
-    width: 82,
-    height: 82,
-    borderRadius: radius.md
+    width: '100%',
+    height: '100%'
   },
   placeholder: {
-    width: 82,
-    height: 82,
-    borderRadius: radius.md,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: colors.border,
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center'
   },
   info: {
     flex: 1,
-    paddingLeft: spacing.md
+    marginLeft: spacing.md,
+    justifyContent: 'center'
   },
-  top: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center'
+    alignItems: 'center',
+    marginBottom: 2
   },
   brand: {
-    color: colors.secondary,
-    fontSize: 11,
-    fontWeight: '800',
-    textTransform: 'uppercase'
+    fontSize: 10,
+    color: colors.textCaption,
+    fontWeight: '900',
+    letterSpacing: 0.5
   },
   title: {
-    marginTop: 2,
-    color: colors.textPrimary,
     fontSize: 16,
-    fontWeight: '800'
+    fontWeight: '800',
+    color: colors.white
   },
   price: {
-    marginTop: 4,
+    fontSize: 17,
+    fontWeight: '900',
     color: colors.primary,
-    fontSize: 18,
-    fontWeight: '900'
+    marginTop: 4
   },
-  metaRow: {
-    marginTop: 4,
+  productMeta: {
+    fontSize: 11,
+    color: colors.textCaption,
+    fontWeight: '700',
+    marginTop: 2
+  },
+  meta: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 6,
     gap: 4
   },
   metaText: {
-    color: colors.textMuted,
-    fontSize: 12,
+    fontSize: 11,
+    color: colors.textSecondary,
     fontWeight: '600'
+  },
+  paymentText: {
+    fontSize: 11,
+    color: colors.textCaption,
+    fontWeight: '600',
+    marginTop: 4
   }
 });

@@ -5,7 +5,7 @@ import { typography } from '../../../theme/typography';
 import { spacing } from '../../../theme/spacing';
 
 export default function Loading({ 
-  text = 'Carregando...',
+  text = 'CARREGANDO...',
   size = 'large' 
 }: { 
   text?: string;
@@ -13,7 +13,7 @@ export default function Loading({
 }) {
   return (
     <View style={styles.container}>
-      <ActivityIndicator size={size} color={colors.secondary} />
+      <ActivityIndicator size={size} color={colors.primary} />
       {text ? <Text style={styles.text}>{text}</Text> : null}
     </View>
   );
@@ -31,6 +31,8 @@ const styles = StyleSheet.create({
     ...typography.body,
     marginTop: spacing.md,
     color: colors.textSecondary,
-    fontWeight: '600'
+    fontWeight: '900',
+    fontSize: 12,
+    letterSpacing: 1.5
   }
 });

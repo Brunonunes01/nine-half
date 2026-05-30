@@ -13,21 +13,14 @@ export default function ImagePreview({
   uri?: string;
   onRemove?: () => void;
 }) {
-  if (!uri) {
-    return (
-      <View style={styles.placeholder}>
-        <Ionicons name="image-outline" size={40} color={colors.textMuted} />
-        <Text style={styles.placeholderText}>Nenhuma imagem selecionada</Text>
-      </View>
-    );
-  }
+  if (!uri) return null;
 
   return (
     <View style={styles.container}>
       <Image source={{ uri }} style={styles.image} resizeMode="cover" />
       {onRemove && (
         <Pressable style={styles.removeButton} onPress={onRemove}>
-          <Ionicons name="close-circle" size={32} color={colors.danger} />
+          <Ionicons name="close" size={20} color={colors.white} />
         </Pressable>
       )}
     </View>
@@ -37,39 +30,30 @@ export default function ImagePreview({
 const styles = StyleSheet.create({
   container: {
     position: 'relative',
-    marginBottom: spacing.md,
-    ...shadows.soft,
+    marginBottom: spacing.lg,
+    width: '100%',
+    height: 240,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border
   },
   image: {
     width: '100%',
-    height: 240,
-    borderRadius: radius.lg,
-    backgroundColor: colors.background,
+    height: '100%',
   },
   removeButton: {
     position: 'absolute',
-    top: -10,
-    right: -10,
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    ...shadows.card,
-  },
-  placeholder: {
-    width: '100%',
-    height: 120,
-    borderRadius: radius.lg,
-    borderWidth: 1.5,
-    borderColor: colors.border,
+    top: spacing.sm,
+    right: spacing.sm,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.md,
-    backgroundColor: colors.background,
-    borderStyle: 'dashed',
-  },
-  placeholderText: {
-    color: colors.textMuted,
-    marginTop: spacing.xs,
-    fontSize: 14,
-    fontWeight: '500',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   }
 });

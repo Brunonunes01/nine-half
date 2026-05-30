@@ -6,6 +6,8 @@ import { colors } from '../../../theme/colors';
 import { radius } from '../../../theme/radius';
 import { shadows } from '../../../theme/shadows';
 import { spacing } from '../../../theme/spacing';
+import { typography } from '../../../theme/typography';
+import { formatCurrencyBRL, formatSizeBR } from '../../../utils/formatters';
 import Badge from '../../ui/Badge';
 import Button from '../../ui/Button';
 
@@ -31,76 +33,73 @@ export default function ReservationCard({
     ? new Date(reservation.createdAt.seconds * 1000).toLocaleDateString('pt-BR')
     : '-';
 
-  const expiresAt = reservation?.expiresAt?.seconds;
-  const now = Math.floor(Date.now() / 1000);
-  const remainingHours = expiresAt ? Math.max(0, Math.floor((expiresAt - now) / 3600)) : 0;
-
   return (
     <View style={styles.card}>
-      <View style={styles.row}>
-        {reservation?.productImageUrl ? (
-          <Image source={{ uri: reservation.productImageUrl }} style={styles.image} resizeMode="cover" />
-        ) : (
-          <View style={styles.placeholder}>
-            <Ionicons name="image-outline" size={26} color={colors.textMuted} />
+      <View style={styles.header}>
+        <View style={styles.productBlock}>
+          <View style={styles.imageContainer}>
+            {reservation?.productImageUrl ? (
+              <Image source={{ uri: reservation.productImageUrl }} style={styles.image} resizeMode="cover" />
+            ) : (
+              <View style={styles.placeholder}>
+                <Ionicons name="image-outline" size={20} color={colors.textCaption} />
+              </View>
+            )}
           </View>
-        )}
-
-        <View style={styles.info}>
-          <View style={styles.top}>
-            <Text style={styles.brand}>{reservation?.productBrand || 'Sneaker'}</Text>
-            <Badge label={reservation.status} />
+          <View style={styles.info}>
+            <Text style={styles.brand}>{reservation?.productBrand?.toUpperCase() || 'SNEAKER'}</Text>
+            <Text numberOfLines={1} style={styles.title}>{reservation?.productModel || 'Item'}</Text>
+            <Text style={styles.price}>{formatCurrencyBRL(reservation?.productPrice)}</Text>
+            <Text style={styles.metaProduct}>
+              {formatSizeBR(reservation?.productSize)}{reservation?.productColor ? ` • ${reservation.productColor}` : ''}
+            </Text>
           </View>
-          <Text numberOfLines={1} style={styles.title}>{reservation?.productModel || 'Produto'}</Text>
-          <Text style={styles.price}>R$ {reservation?.productPrice || '0,00'}</Text>
-          <View style={styles.metaRow}>
-            <Ionicons name="calendar-outline" size={12} color={colors.textMuted} />
-            <Text style={styles.metaText}>{date}</Text>
-          </View>
-          {isActive ? (
-            <View style={styles.timerRow}>
-              <Ionicons name="time-outline" size={12} color={remainingHours < 2 ? colors.danger : colors.secondary} />
-              <Text style={[styles.timerText, remainingHours < 2 && { color: colors.danger }]}>
-                Expira em aprox. {remainingHours}h
-              </Text>
-            </View>
-          ) : null}
         </View>
+        <Badge label={reservation.status} />
       </View>
 
-      {isActive ? (
+      <View style={styles.meta}>
+        <View style={styles.metaRow}>
+          <Ionicons name="calendar-outline" size={14} color={colors.textCaption} />
+          <Text style={styles.metaText}>Iniciada em {date}</Text>
+        </View>
+        <Text style={styles.roleLabel}>
+          {isSeller ? 'VOCÊ É O VENDEDOR' : 'VOCÊ É O COMPRADOR'}
+        </Text>
+      </View>
+
+      {isActive && (
         <View style={styles.actions}>
-          <Text style={styles.role}>{isSeller ? 'Voce e o vendedor' : 'Voce e o comprador'}</Text>
-          {isSeller ? (
-            <View style={styles.rowActions}>
+          {onComplete ? (
+            <>
               <Button
-                title="Finalizar venda"
-                variant="secondary"
+                title={isSeller ? 'Confirmar venda' : 'Finalizar compra'}
+                variant="primary"
                 onPress={() => onComplete?.(reservation)}
                 loading={!!completeLoading}
                 disabled={!!completeLoading || !!cancelLoading}
-                style={styles.primaryAction}
+                style={styles.actionBtn}
               />
               <Button
                 title="Liberar"
-                variant="outline"
+                variant="secondary"
                 onPress={() => onCancel(reservation)}
                 loading={!!cancelLoading}
                 disabled={!!completeLoading || !!cancelLoading}
-                style={styles.secondaryAction}
+                style={styles.actionBtn}
               />
-            </View>
+            </>
           ) : (
             <Button
-              title="Cancelar reserva"
-              variant="outline"
+              title="CANCELAR RESERVA"
+              variant="secondary"
               onPress={() => onCancel(reservation)}
               loading={!!cancelLoading}
               disabled={!!completeLoading || !!cancelLoading}
             />
           )}
         </View>
-      ) : null}
+      )}
     </View>
   );
 }
@@ -108,101 +107,99 @@ export default function ReservationCard({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
+    borderRadius: 12,
+    marginBottom: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-    marginBottom: spacing.md,
-    ...shadows.soft
+    padding: spacing.md,
   },
-  row: {
+  header: {
     flexDirection: 'row',
-    padding: spacing.md
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  productBlock: {
+    flexDirection: 'row',
+    flex: 1,
+    marginRight: spacing.sm,
+  },
+  imageContainer: {
+    width: 70,
+    height: 70,
+    borderRadius: 8,
+    backgroundColor: colors.backgroundSecondary,
+    overflow: 'hidden',
   },
   image: {
-    width: 88,
-    height: 88,
-    borderRadius: radius.md
+    width: '100%',
+    height: '100%',
   },
   placeholder: {
-    width: 88,
-    height: 88,
-    borderRadius: radius.md,
-    backgroundColor: '#F8FAFC',
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border
   },
   info: {
     flex: 1,
-    paddingLeft: spacing.md
-  },
-  top: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between'
+    marginLeft: spacing.md,
+    justifyContent: 'center',
   },
   brand: {
-    color: colors.secondary,
-    fontSize: 11,
-    fontWeight: '800',
-    textTransform: 'uppercase'
+    fontSize: 10,
+    color: colors.textCaption,
+    fontWeight: '900',
+    letterSpacing: 0.5,
   },
   title: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: colors.white,
     marginTop: 2,
-    color: colors.textPrimary,
-    fontSize: 16,
-    fontWeight: '800'
   },
   price: {
-    marginTop: 4,
+    fontSize: 16,
+    fontWeight: '900',
     color: colors.primary,
-    fontSize: 18,
-    fontWeight: '900'
-  },
-  metaRow: {
     marginTop: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4
   },
-  metaText: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: '600'
+  metaProduct: {
+    fontSize: 11,
+    color: colors.textCaption,
+    fontWeight: '700',
+    marginTop: 3
   },
-  timerRow: {
-    marginTop: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4
-  },
-  timerText: {
-    color: colors.secondary,
-    fontSize: 12,
-    fontWeight: '700'
-  },
-  actions: {
+  meta: {
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    backgroundColor: '#F8FAFC',
-    padding: spacing.md
-  },
-  role: {
-    color: colors.textSecondary,
-    fontSize: 12,
-    fontWeight: '700',
-    marginBottom: spacing.sm
-  },
-  rowActions: {
     flexDirection: 'row',
-    gap: spacing.sm
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  primaryAction: {
-    flex: 1.4
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
-  secondaryAction: {
-    flex: 1
+  metaText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontWeight: '600',
+  },
+  roleLabel: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: colors.textCaption,
+    letterSpacing: 0.5,
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  actionBtn: {
+    flex: 1,
+    minHeight: 44,
   }
 });

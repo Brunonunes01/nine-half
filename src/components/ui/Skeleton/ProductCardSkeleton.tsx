@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, Animated, Easing } from 'react-native';
 import { colors } from '../../../theme/colors';
-import { radius } from '../../../theme/radius';
 import { spacing } from '../../../theme/spacing';
 
 const SkeletonPiece = ({ style }: any) => {
@@ -12,13 +11,13 @@ const SkeletonPiece = ({ style }: any) => {
       Animated.sequence([
         Animated.timing(animatedValue, {
           toValue: 1,
-          duration: 600,
+          duration: 1200,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
         Animated.timing(animatedValue, {
           toValue: 0,
-          duration: 600,
+          duration: 1200,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
@@ -28,7 +27,7 @@ const SkeletonPiece = ({ style }: any) => {
 
   const opacity = animatedValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.3, 1],
+    outputRange: [0.1, 0.25],
   });
 
   return <Animated.View style={[styles.piece, style, { opacity }]} />;
@@ -39,12 +38,12 @@ export const ProductCardSkeleton = () => {
     <View style={styles.card}>
       <SkeletonPiece style={styles.imageBox} />
       <View style={styles.info}>
-        <SkeletonPiece style={{ width: '40%', height: 10, borderRadius: 4 }} />
-        <SkeletonPiece style={{ width: '80%', height: 20, borderRadius: 4, marginTop: 8 }} />
-        <SkeletonPiece style={{ width: '60%', height: 20, borderRadius: 4, marginTop: 4 }} />
+        <SkeletonPiece style={styles.badge} />
+        <SkeletonPiece style={styles.title} />
+        <SkeletonPiece style={styles.subtitle} />
         <View style={styles.footer}>
-          <SkeletonPiece style={{ width: '50%', height: 24, borderRadius: 4 }} />
-          <SkeletonPiece style={{ width: 32, height: 32, borderRadius: 16 }} />
+          <SkeletonPiece style={styles.price} />
+          <SkeletonPiece style={styles.action} />
         </View>
       </View>
     </View>
@@ -53,26 +52,55 @@ export const ProductCardSkeleton = () => {
 
 const styles = StyleSheet.create({
   piece: {
-    backgroundColor: colors.border,
+    backgroundColor: colors.white,
   },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    borderRadius: 12,
     marginBottom: spacing.md,
+    overflow: 'hidden',
+    width: '100%',
     borderWidth: 1,
     borderColor: colors.border,
-    overflow: 'hidden',
   },
   imageBox: {
-    height: 180,
+    height: 200,
+    width: '100%',
   },
   info: {
     padding: spacing.md,
+  },
+  badge: {
+    width: 60,
+    height: 16,
+    borderRadius: 4,
+    marginBottom: spacing.sm,
+  },
+  title: {
+    width: '90%',
+    height: 20,
+    borderRadius: 4,
+    marginBottom: spacing.xs,
+  },
+  subtitle: {
+    width: '60%',
+    height: 14,
+    borderRadius: 4,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: spacing.lg,
+  },
+  price: {
+    width: 80,
+    height: 24,
+    borderRadius: 4,
+  },
+  action: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
   },
 });

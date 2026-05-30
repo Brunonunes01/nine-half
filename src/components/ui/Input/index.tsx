@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { KeyboardTypeOptions, Pressable, StyleSheet, Text, TextInput, View, ViewStyle } from 'react-native';
+import { KeyboardTypeOptions, Pressable, StyleSheet, Text, TextInput, TextInputProps, View, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../../theme/colors';
 import { radius } from '../../../theme/radius';
@@ -17,6 +17,8 @@ type InputProps = {
   error?: string;
   style?: ViewStyle;
   icon?: keyof typeof Ionicons.glyphMap;
+  onSubmitEditing?: TextInputProps['onSubmitEditing'];
+  returnKeyType?: TextInputProps['returnKeyType'];
 };
 
 export default function Input({
@@ -29,7 +31,9 @@ export default function Input({
   keyboardType = 'default',
   error = '',
   style,
-  icon
+  icon,
+  onSubmitEditing,
+  returnKeyType
 }: InputProps) {
   const [focused, setFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -37,13 +41,17 @@ export default function Input({
 
   return (
     <View style={[styles.wrapper, style]}>
-      {label ? <Text style={styles.label}>{label}</Text> : null}
-      <View style={[styles.field, focused && styles.fieldFocused, !!error && styles.fieldError]}>
+      {label ? <Text style={[styles.label, focused && styles.labelFocused]}>{label}</Text> : null}
+      <View style={[
+        styles.field, 
+        focused && styles.fieldFocused, 
+        !!error && styles.fieldError
+      ]}>
         {icon ? (
           <Ionicons
             name={icon}
-            size={18}
-            color={focused ? colors.primary : colors.textMuted}
+            size={20}
+            color={focused ? colors.primary : colors.textCaption}
             style={styles.leading}
           />
         ) : null}
@@ -51,17 +59,24 @@ export default function Input({
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor={colors.textMuted}
+          placeholderTextColor={colors.textCaption}
           secureTextEntry={isPassword && !showPassword}
           autoCapitalize={autoCapitalize}
           keyboardType={keyboardType}
           style={styles.input}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
+          selectionColor={colors.primary}
+          onSubmitEditing={onSubmitEditing}
+          returnKeyType={returnKeyType}
         />
         {isPassword ? (
           <Pressable onPress={() => setShowPassword((v) => !v)} style={styles.trailing}>
-            <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color={colors.textMuted} />
+            <Ionicons 
+              name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
+              size={20} 
+              color={colors.textCaption} 
+            />
           </Pressable>
         ) : null}
       </View>
@@ -72,46 +87,51 @@ export default function Input({
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: spacing.md
+    marginBottom: spacing.lg
   },
   label: {
     ...typography.caption,
     color: colors.textSecondary,
-    marginBottom: spacing.xxs
+    marginBottom: spacing.sm,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  labelFocused: {
+    color: colors.primary,
   },
   field: {
-    minHeight: 52,
-    borderRadius: radius.md,
-    borderWidth: 1,
+    minHeight: 56,
+    borderRadius: 8,
+    borderWidth: 1.5,
     borderColor: colors.border,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surface, // #1E1E1E
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.md
   },
   fieldFocused: {
-    borderColor: colors.secondary
+    borderColor: colors.primary, // Orange focus
   },
   fieldError: {
-    borderColor: colors.danger
+    borderColor: colors.danger,
   },
   leading: {
-    marginRight: spacing.xs
+    marginRight: spacing.sm
   },
   trailing: {
-    marginLeft: spacing.xs
+    marginLeft: spacing.sm
   },
   input: {
     flex: 1,
-    fontSize: 15,
-    color: colors.textPrimary,
+    fontSize: 16,
+    color: colors.white,
     fontWeight: '500',
-    paddingVertical: spacing.sm
+    paddingVertical: spacing.md
   },
   error: {
-    marginTop: spacing.xxs,
+    marginTop: spacing.xs,
     color: colors.danger,
     fontSize: 12,
-    fontWeight: '600'
+    fontWeight: '700'
   }
 });

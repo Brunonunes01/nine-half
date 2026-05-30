@@ -1,11 +1,12 @@
 import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { colors } from '../../../theme/colors';
 import { radius } from '../../../theme/radius';
-import { shadows } from '../../../theme/shadows';
 import { spacing } from '../../../theme/spacing';
+import { typography } from '../../../theme/typography';
 
-type Variant = 'primary' | 'secondary' | 'danger' | 'outline' | 'ghost' | 'action';
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
 type ButtonProps = {
   title: string;
@@ -30,9 +31,16 @@ export default function Button({
 }: ButtonProps) {
   const isBlocked = disabled || loading;
 
+  const handlePress = () => {
+    if (!isBlocked) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      onPress();
+    }
+  };
+
   return (
     <Pressable
-      onPress={onPress}
+      onPress={handlePress}
       disabled={isBlocked}
       style={({ pressed }) => [
         styles.button,
@@ -44,11 +52,11 @@ export default function Button({
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'outline' || variant === 'ghost' ? colors.primary : colors.white} />
+        <ActivityIndicator color={variant === 'primary' ? colors.black : colors.primary} />
       ) : (
         <View style={styles.content}>
           {icon ? <View style={styles.iconWrap}>{icon}</View> : null}
-          <Text style={[styles.text, textStyles[variant]]}>{title}</Text>
+          <Text style={[styles.text, textStyles[variant]]}>{title.toUpperCase()}</Text>
         </View>
       )}
     </Pressable>
@@ -58,55 +66,46 @@ export default function Button({
 const variantStyles = StyleSheet.create({
   primary: {
     backgroundColor: colors.primary,
-    borderColor: colors.primary,
-    borderWidth: 1,
-    ...shadows.card
+    borderWidth: 0,
   },
   secondary: {
-    backgroundColor: colors.secondary,
-    borderColor: colors.secondary,
-    borderWidth: 1,
-    ...shadows.card
+    backgroundColor: colors.transparent,
+    borderColor: colors.white,
+    borderWidth: 1.5,
+  },
+  ghost: {
+    backgroundColor: colors.transparent,
+    borderWidth: 0,
   },
   danger: {
     backgroundColor: colors.danger,
-    borderColor: colors.danger,
-    borderWidth: 1
-  },
-  outline: {
-    backgroundColor: colors.white,
-    borderColor: colors.border,
-    borderWidth: 1
-  },
-  ghost: {
-    backgroundColor: 'transparent',
-    borderColor: 'transparent',
-    borderWidth: 1
-  },
-  action: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
-    borderWidth: 1,
-    ...shadows.soft
+    borderWidth: 0,
   }
 });
 
 const textStyles = StyleSheet.create({
-  primary: { color: colors.white },
-  secondary: { color: colors.white },
-  danger: { color: colors.white },
-  outline: { color: colors.primary },
-  ghost: { color: colors.secondary },
-  action: { color: colors.white }
+  primary: { 
+    color: colors.black,
+    fontWeight: '900'
+  },
+  secondary: { 
+    color: colors.white 
+  },
+  ghost: { 
+    color: colors.textSecondary 
+  },
+  danger: { 
+    color: colors.white 
+  }
 });
 
 const styles = StyleSheet.create({
   button: {
-    minHeight: 52,
-    borderRadius: radius.md,
+    minHeight: 56,
+    borderRadius: 8, // Slightly rounded as per Hype guide
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg
+    paddingHorizontal: spacing.lg,
   },
   fullWidth: {
     width: '100%'
@@ -117,17 +116,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center'
   },
   iconWrap: {
-    marginRight: spacing.xs
+    marginRight: spacing.sm
   },
   text: {
-    fontSize: 15,
+    ...typography.body,
     fontWeight: '800',
-    letterSpacing: 0.2
+    letterSpacing: 1,
   },
   disabled: {
-    opacity: 0.55
+    opacity: 0.4
   },
   pressed: {
-    transform: [{ scale: 0.985 }]
+    transform: [{ scale: 0.98 }]
   }
 });
