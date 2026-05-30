@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import ScreenContainer from '../../../components/layout/ScreenContainer';
+import Header from '../../../components/layout/Header';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 import { useAuth } from '../../../hooks/useAuth';
@@ -10,7 +12,6 @@ import { validateEmail, validatePassword, validateRequired } from '../../../util
 import { colors } from '../../../theme/colors';
 import { radius } from '../../../theme/radius';
 import { spacing } from '../../../theme/spacing';
-import { shadows } from '../../../theme/shadows';
 import { typography } from '../../../theme/typography';
 
 export default function RegisterScreen({ navigation }: any) {
@@ -23,14 +24,17 @@ export default function RegisterScreen({ navigation }: any) {
   async function handleRegister() {
     setFormError('');
     if (!validateRequired(nome)) {
-      setFormError('Informe seu nome.');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setFormError('Informe seu nome completo.');
       return;
     }
     if (!validateEmail(email)) {
-      setFormError('E-mail invalido.');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setFormError('E-mail inválido.');
       return;
     }
     if (!validatePassword(password)) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setFormError('A senha deve ter pelo menos 6 caracteres.');
       return;
     }
@@ -41,40 +45,38 @@ export default function RegisterScreen({ navigation }: any) {
         email: email.trim(),
         password
       });
-    } catch (_) {}
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (_) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    }
   }
 
   return (
-    <ScreenContainer scroll>
+    <ScreenContainer scroll backgroundColor={colors.background}>
+      <Header title="Criar Conta" showBack />
+      
       <View style={styles.content}>
-        <View style={styles.hero}>
-          <Text style={styles.title}>Criar conta</Text>
-          <Text style={styles.subtitle}>Cadastre-se para publicar vitrine, reservar pares e fechar vendas.</Text>
-        </View>
-
         <View style={styles.form}>
           <Input
-            label="Nome"
-            icon="person-outline"
+            label="NOME COMPLETO"
             value={nome}
             onChangeText={setNome}
-            placeholder="Seu nome completo"
+            placeholder="Ex: Matheus Silva"
             autoCapitalize="words"
           />
           <Input
-            label="E-mail"
-            icon="mail-outline"
+            label="E-MAIL"
             value={email}
             onChangeText={setEmail}
             placeholder="seu@email.com"
             keyboardType="email-address"
+            autoCapitalize="none"
           />
           <Input
-            label="Senha"
-            icon="lock-closed-outline"
+            label="SENHA"
             value={password}
             onChangeText={setPassword}
-            placeholder="Minimo 6 caracteres"
+            placeholder="Mínimo 6 caracteres"
             secureTextEntry
           />
 
@@ -85,13 +87,22 @@ export default function RegisterScreen({ navigation }: any) {
             </View>
           ) : null}
 
-          <Button title="Cadastrar" onPress={handleRegister} loading={loading} disabled={loading} />
+          <Button 
+            title="CADASTRAR AGORA" 
+            onPress={handleRegister} 
+            loading={loading} 
+            disabled={loading} 
+            style={styles.registerButton}
+          />
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Ja tem conta?</Text>
-          <Pressable onPress={() => navigation.navigate(ROUTES.LOGIN)}>
-            <Text style={styles.footerLink}> Entrar</Text>
+          <Text style={styles.footerText}>Já faz parte do time?</Text>
+          <Pressable onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            navigation.navigate(ROUTES.LOGIN);
+          }}>
+            <Text style={styles.footerLink}> FAZER LOGIN</Text>
           </Pressable>
         </View>
       </View>
@@ -102,51 +113,47 @@ export default function RegisterScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   content: {
     flex: 1,
-    paddingTop: spacing.xl
-  },
-  hero: {
-    marginBottom: spacing.lg
-  },
-  title: {
-    ...typography.h1,
-    color: colors.textPrimary
-  },
-  subtitle: {
-    ...typography.body,
-    color: colors.textSecondary,
-    marginTop: spacing.xs
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xxl,
   },
   form: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.xl,
-    ...shadows.soft
+    marginTop: spacing.md,
+  },
+  registerButton: {
+    marginTop: spacing.md,
   },
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEE2E2',
-    borderRadius: radius.md,
-    padding: spacing.sm,
+    padding: spacing.md,
     gap: spacing.xs,
-    marginBottom: spacing.md
+    marginBottom: spacing.md,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.danger,
   },
   errorText: {
     color: colors.danger,
-    fontWeight: '600'
+    fontWeight: '700',
+    fontSize: 13,
   },
   footer: {
-    marginTop: spacing.xl,
+    marginTop: spacing.xxl,
     flexDirection: 'row',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   footerText: {
-    color: colors.textSecondary
+    ...typography.body,
+    color: colors.textSecondary,
+    fontSize: 14,
   },
   footerLink: {
-    color: colors.secondary,
-    fontWeight: '800'
+    ...typography.body,
+    color: colors.primary,
+    fontWeight: '900',
+    fontSize: 14,
+    letterSpacing: 0.5,
   }
 });

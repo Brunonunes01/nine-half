@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import ScreenContainer from '../../../components/layout/ScreenContainer';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
@@ -10,7 +11,6 @@ import { validateEmail, validatePassword } from '../../../utils/validators';
 import { colors } from '../../../theme/colors';
 import { radius } from '../../../theme/radius';
 import { spacing } from '../../../theme/spacing';
-import { shadows } from '../../../theme/shadows';
 import { typography } from '../../../theme/typography';
 
 export default function LoginScreen({ navigation }: any) {
@@ -23,44 +23,47 @@ export default function LoginScreen({ navigation }: any) {
     setFormError('');
 
     if (!validateEmail(email)) {
-      setFormError('E-mail invalido.');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setFormError('E-mail inválido.');
       return;
     }
 
     if (!validatePassword(password)) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setFormError('A senha deve ter pelo menos 6 caracteres.');
       return;
     }
 
     try {
       await login(email.trim(), password);
-    } catch (_) {}
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (_) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    }
   }
 
   return (
-    <ScreenContainer scroll>
+    <ScreenContainer scroll backgroundColor={colors.background}>
       <View style={styles.content}>
-        <View style={styles.hero}>
+        <View style={styles.header}>
           <View style={styles.logoBox}>
-            <Text style={styles.logoText}>N9H</Text>
+            <Text style={styles.logoText}>9/2</Text>
           </View>
-          <Text style={styles.title}>Nine Half</Text>
-          <Text style={styles.subtitle}>Estoque compartilhado de sneakers para operacao profissional.</Text>
+          <Text style={styles.title}>NINE HALF</Text>
+          <Text style={styles.subtitle}>Gerenciamento premium de sneakers para revendedores.</Text>
         </View>
 
         <View style={styles.form}>
-          <Text style={styles.formTitle}>Acessar conta</Text>
           <Input
-            label="E-mail"
-            icon="mail-outline"
+            label="E-MAIL"
             value={email}
             onChangeText={setEmail}
-            placeholder="seu@email.com"
+            placeholder="Digite seu e-mail"
             keyboardType="email-address"
+            autoCapitalize="none"
           />
           <Input
-            label="Senha"
-            icon="lock-closed-outline"
+            label="SENHA"
             value={password}
             onChangeText={setPassword}
             placeholder="Digite sua senha"
@@ -74,13 +77,22 @@ export default function LoginScreen({ navigation }: any) {
             </View>
           ) : null}
 
-          <Button title="Entrar" onPress={handleLogin} loading={loading} disabled={loading} />
+          <Button 
+            title="ENTRAR NA CONTA" 
+            onPress={handleLogin} 
+            loading={loading} 
+            disabled={loading} 
+            style={styles.loginButton}
+          />
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Ainda nao tem conta?</Text>
-          <Pressable onPress={() => navigation.navigate(ROUTES.REGISTER)}>
-            <Text style={styles.footerLink}> Criar conta</Text>
+          <Text style={styles.footerText}>Ainda não tem conta?</Text>
+          <Pressable onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            navigation.navigate(ROUTES.REGISTER);
+          }}>
+            <Text style={styles.footerLink}> CRIAR CONTA AGORA</Text>
           </Pressable>
         </View>
       </View>
@@ -91,73 +103,79 @@ export default function LoginScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   content: {
     flex: 1,
-    paddingTop: spacing.xl
+    paddingTop: spacing.xxl,
+    paddingBottom: spacing.xxl,
   },
-  hero: {
-    marginBottom: spacing.xl
+  header: {
+    alignItems: 'center',
+    marginBottom: spacing.xxl,
   },
   logoBox: {
-    width: 74,
-    height: 74,
-    borderRadius: radius.lg,
+    width: 80,
+    height: 80,
+    borderRadius: 20,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.md,
-    ...shadows.floating
+    marginBottom: spacing.lg,
   },
   logoText: {
-    color: colors.white,
-    fontSize: 26,
-    fontWeight: '900'
+    color: colors.black,
+    fontSize: 28,
+    fontWeight: '900',
   },
   title: {
     ...typography.h1,
-    color: colors.textPrimary
+    fontSize: 32,
+    fontWeight: '900',
+    color: colors.white,
+    letterSpacing: 1,
   },
   subtitle: {
     ...typography.body,
     color: colors.textSecondary,
-    marginTop: spacing.xs,
-    maxWidth: 320
+    marginTop: spacing.sm,
+    textAlign: 'center',
+    paddingHorizontal: spacing.xl,
   },
   form: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.xl,
-    ...shadows.soft
+    marginTop: spacing.xl,
   },
-  formTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    marginBottom: spacing.md
+  loginButton: {
+    marginTop: spacing.md,
   },
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEE2E2',
-    borderRadius: radius.md,
-    padding: spacing.sm,
+    padding: spacing.md,
     gap: spacing.xs,
-    marginBottom: spacing.md
+    marginBottom: spacing.md,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.danger,
   },
   errorText: {
     color: colors.danger,
-    fontWeight: '600'
+    fontWeight: '700',
+    fontSize: 13,
   },
   footer: {
-    marginTop: spacing.xl,
+    marginTop: spacing.xxl,
     flexDirection: 'row',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   footerText: {
-    color: colors.textSecondary
+    ...typography.body,
+    color: colors.textSecondary,
+    fontSize: 14,
   },
   footerLink: {
-    color: colors.secondary,
-    fontWeight: '800'
+    ...typography.body,
+    color: colors.primary,
+    fontWeight: '900',
+    fontSize: 14,
+    letterSpacing: 0.5,
   }
 });
