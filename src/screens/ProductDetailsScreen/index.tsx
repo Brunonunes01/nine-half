@@ -160,7 +160,13 @@ export default function ProductDetailsScreen({ navigation, route }: any) {
           {!isOwner && seller && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>VENDEDOR RESPONSÁVEL</Text>
-              <View style={styles.sellerCard}>
+              <Pressable 
+                style={styles.sellerCard}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  navigation.navigate(ROUTES.PUBLIC_PROFILE, { userId: seller.id });
+                }}
+              >
                 <View style={styles.sellerAvatar}>
                   <Text style={styles.sellerInitial}>{seller.nome?.charAt(0).toUpperCase()}</Text>
                 </View>
@@ -172,7 +178,7 @@ export default function ProductDetailsScreen({ navigation, route }: any) {
                   </View>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color={colors.border} />
-              </View>
+              </Pressable>
             </View>
           )}
 

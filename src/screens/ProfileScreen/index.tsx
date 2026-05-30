@@ -40,7 +40,13 @@ export default function ProfileScreen({ navigation }: any) {
   }, [user]);
 
   const userInitial = useMemo(() => user?.nome?.charAt(0)?.toUpperCase() || 'S', [user?.nome]);
-  const joinedDate = useMemo(() => user?.createdAt ? new Date(user.createdAt).getFullYear() : '2024', [user?.createdAt]);
+  
+  const joinedDate = useMemo(() => {
+    if (user?.createdAt?.seconds) {
+      return new Date(user.createdAt.seconds * 1000).getFullYear();
+    }
+    return '2024';
+  }, [user?.createdAt]);
 
   const handleLogout = () => {
     Alert.alert('Sair da Conta', 'Tem certeza que deseja encerrar sua sessão?', [

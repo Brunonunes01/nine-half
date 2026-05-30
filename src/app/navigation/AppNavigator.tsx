@@ -9,6 +9,7 @@ import ProfileScreen from '../../screens/ProfileScreen';
 import ShowcaseScreen from '../../screens/ShowcaseScreen';
 import ProductFormScreen from '../../screens/ProductFormScreen';
 import ProductDetailsScreen from '../../screens/ProductDetailsScreen';
+import PublicProfileScreen from '../../screens/PublicProfileScreen';
 import GlobalStockScreen from '../../screens/GlobalStockScreen';
 import MyReservationsScreen from '../../screens/MyReservationsScreen';
 import MyTransactionsScreen from '../../screens/MyTransactionsScreen';
@@ -45,6 +46,7 @@ function PrivateNavigator() {
       <Stack.Screen name={ROUTES.GLOBAL_STOCK} component={GlobalStockScreen} />
       <Stack.Screen name={ROUTES.PRODUCT_FORM} component={ProductFormScreen} />
       <Stack.Screen name={ROUTES.PRODUCT_DETAILS} component={ProductDetailsScreen} />
+      <Stack.Screen name={ROUTES.PUBLIC_PROFILE} component={PublicProfileScreen} />
       <Stack.Screen name={ROUTES.CHECKOUT} component={CheckoutScreen} />
       <Stack.Screen name={ROUTES.PROFILE} component={ProfileScreen} />
       <Stack.Screen name={ROUTES.MY_RESERVATIONS} component={MyReservationsScreen} />
