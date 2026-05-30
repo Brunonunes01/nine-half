@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../../theme/colors';
 import { radius } from '../../../theme/radius';
-import { shadows } from '../../../theme/shadows';
+import { themeShadows } from '../../../theme/themeShadows';
 import { spacing } from '../../../theme/spacing';
 import { typography } from '../../../theme/typography';
 import { formatCurrencyBRL, formatSizeBR } from '../../../utils/formatters';
@@ -22,7 +22,7 @@ export default function ProductCard({
     : product.imagemUrl;
 
   const handlePress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     onPress();
   };
 
@@ -42,24 +42,24 @@ export default function ProductCard({
             <Ionicons name="image-outline" size={40} color={colors.textCaption} />
           </View>
         )}
-        <View style={styles.badgeContainer}>
+        <View style={styles.badgeOverlay}>
           <Badge label={product.status} />
+        </View>
+        <View style={styles.sizeOverlay}>
+          <Text style={styles.sizeOverlayText}>{formatSizeBR(product.numeracao)}</Text>
         </View>
       </View>
 
-      <View style={styles.info}>
-        <View style={styles.textBlock}>
-          <Text style={styles.brand}>{product.marca?.toUpperCase()}</Text>
-          <Text style={styles.title} numberOfLines={1}>{product.modelo}</Text>
-        </View>
+      <View style={styles.infoBox}>
+        <Text style={styles.brandText}>{product.marca?.toUpperCase()}</Text>
+        <Text style={styles.modelText} numberOfLines={1}>{product.modelo}</Text>
         
-        <View style={styles.footer}>
-          <Text style={styles.price}>{formatCurrencyBRL(product.preco)}</Text>
-          {product.numeracao && (
-            <Text style={styles.size}>{formatSizeBR(product.numeracao)}</Text>
-          )}
+        <View style={styles.footerRow}>
+          <Text style={styles.priceValue}>{formatCurrencyBRL(product.preco)}</Text>
+          <View style={styles.actionCircle}>
+            <Ionicons name="add" size={20} color={colors.black} />
+          </View>
         </View>
-        {product.cor ? <Text style={styles.colorText}>Cor: {product.cor}</Text> : null}
       </View>
     </Pressable>
   );
@@ -68,19 +68,20 @@ export default function ProductCard({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 12,
+    borderRadius: 16,
     marginBottom: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
     overflow: 'hidden',
     width: '100%',
+    ...themeShadows.medium
   },
   pressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.98 }],
+    transform: [{ scale: 0.97 }],
+    borderColor: colors.primary
   },
   imageBox: {
-    height: 180,
+    height: 160,
     backgroundColor: colors.backgroundSecondary,
     position: 'relative',
     alignItems: 'center',
@@ -94,53 +95,57 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeContainer: {
+  badgeOverlay: {
     position: 'absolute',
-    top: 8,
-    left: 8,
+    top: 10,
+    left: 10,
   },
-  info: {
-    padding: spacing.md,
+  sizeOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderTopLeftRadius: 10
   },
-  textBlock: {
-    marginBottom: 8,
-  },
-  brand: {
-    ...typography.caption,
-    fontSize: 10,
-    color: colors.textCaption,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-  title: {
-    ...typography.h3,
-    fontSize: 16,
+  sizeOverlayText: {
     color: colors.white,
-    fontWeight: '800',
-    marginTop: 2,
+    fontSize: 10,
+    fontWeight: '900'
   },
-  footer: {
+  infoBox: {
+    padding: spacing.md,
+    gap: 2
+  },
+  brandText: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: colors.textCaption,
+    letterSpacing: 1
+  },
+  modelText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.white,
+  },
+  footerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: spacing.xs,
+    marginTop: 8
   },
-  price: {
-    ...typography.price,
-    fontSize: 18,
+  priceValue: {
+    fontSize: 16,
     fontWeight: '900',
-    color: colors.primary,
+    color: colors.primary
   },
-  size: {
-    ...typography.caption,
-    fontSize: 11,
-    color: colors.textSecondary,
-    fontWeight: '800',
-  },
-  colorText: {
-    ...typography.caption,
-    fontSize: 11,
-    color: colors.textCaption,
-    marginTop: 4
+  actionCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center'
   }
 });

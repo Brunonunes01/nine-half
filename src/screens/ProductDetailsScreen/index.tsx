@@ -17,19 +17,18 @@ import { useReservations } from '../../hooks/useReservations';
 import { getUserById } from '../../services/userService';
 import { colors } from '../../theme/colors';
 import { radius } from '../../theme/radius';
-import { shadows } from '../../theme/shadows';
+import { themeShadows } from '../../theme/themeShadows';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { formatCurrencyBRL, formatSizeBR } from '../../utils/formatters';
 
 export default function ProductDetailsScreen({ navigation, route }: any) {
   const productId = route.params?.productId;
-  const source = route.params?.source;
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const { user } = useAuth();
   const { selectedProduct, loadProductById, loading } = useProducts();
-  const { reserveProduct, loading: reserving } = useReservations();
+  const { loading: reserving } = useReservations();
 
   const [seller, setSeller] = useState<any>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -48,7 +47,7 @@ export default function ProductDetailsScreen({ navigation, route }: any) {
     setSelectedImageIndex(0);
   }, [selectedProduct?.id]);
 
-  if (loading && !selectedProduct) return <Loading text="CARREGANDO DETALHES..." />;
+  if (loading && !selectedProduct) return <Loading text="DESBLOQUEANDO SNEAKER..." />;
   if (!selectedProduct) return <EmptyState title="PRODUTO NÃO ENCONTRADO" />;
 
   const productImages = Array.isArray(selectedProduct.imagens) && selectedProduct.imagens.length > 0
@@ -63,141 +62,146 @@ export default function ProductDetailsScreen({ navigation, route }: any) {
   async function handleReserve() {
     if (!isProfileComplete) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      Alert.alert('Perfil Incompleto', 'Complete seus dados no perfil para realizar uma reserva.', [
+      Alert.alert('Perfil Incompleto', 'Complete seus dados para reservar este par.', [
         { text: 'Ir para Perfil', onPress: () => navigation.navigate(ROUTES.PROFILE) },
         { text: 'Agora não', style: 'cancel' }
       ]);
       return;
     }
 
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      navigation.navigate(ROUTES.CHECKOUT, { productId: selectedProduct.id });
-    } catch (err: any) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Erro na Reserva', err?.message || 'Não foi possível completar a reserva.');
-    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    navigation.navigate(ROUTES.CHECKOUT, { productId: selectedProduct.id });
   }
 
   return (
     <View style={styles.flex}>
       <ScreenContainer scroll withPadding={false} backgroundColor={colors.background}>
-        <View style={styles.headerPadding}>
-          <Header title="Detalhes" showBack />
+        <View style={styles.headerAbsolute}>
+          <Header title="" showBack />
         </View>
 
-        <View style={[styles.hero, { height: width * 0.9 }]}>
-          {selectedImage ? (
-            <Image source={{ uri: selectedImage }} style={styles.heroImage} resizeMode="contain" />
-          ) : (
-            <View style={styles.placeholder}>
+        <View style={[styles.heroContainer, { height: width }]}>
+          <View style={styles.imageStage}>
+            {selectedImage ? (
+              <Image source={{ uri: selectedImage }} style={styles.heroImage} resizeMode="contain" />
+            ) : (
               <Ionicons name="image-outline" size={64} color={colors.border} />
-            </View>
-          )}
-          <View style={styles.heroBadge}>
+            )}
+          </View>
+          <View style={styles.heroOverlay}>
             <Badge label={selectedProduct.status} />
+            <View style={styles.conditionChip}>
+              <Text style={styles.conditionText}>{selectedProduct.condicao?.toUpperCase() || 'NOVO'}</Text>
+            </View>
           </View>
         </View>
 
         {productImages.length > 1 && (
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false} 
-            contentContainerStyle={styles.gallery}
-          >
-            {productImages.map((uri: string, index: number) => (
-              <Pressable
-                key={`${uri}-${index}`}
-                style={[styles.thumb, selectedImageIndex === index && styles.thumbActive]}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setSelectedImageIndex(index);
-                }}
-              >
-                <Image source={{ uri }} style={styles.thumbImage} />
-              </Pressable>
-            ))}
-          </ScrollView>
+          <View style={styles.galleryContainer}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.galleryScroll}>
+              {productImages.map((uri: string, index: number) => (
+                <Pressable
+                  key={`${uri}-${index}`}
+                  style={[styles.thumb, selectedImageIndex === index && styles.thumbActive]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setSelectedImageIndex(index);
+                  }}
+                >
+                  <Image source={{ uri }} style={styles.thumbImage} />
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
         )}
 
-        <View style={styles.content}>
-          <View style={styles.mainInfo}>
-            <View style={styles.brandRow}>
-              <Text style={styles.brand}>{selectedProduct.marca?.toUpperCase()}</Text>
-              <Text style={styles.origem}>{selectedProduct.origem?.toUpperCase()}</Text>
-            </View>
-            <Text style={styles.model}>{selectedProduct.modelo}</Text>
-            <Text style={styles.price}>{formatCurrencyBRL(selectedProduct.preco)}</Text>
-          </View>
-
-          <View style={styles.grid}>
-            <View style={styles.gridItem}>
-              <Text style={styles.gridLabel}>TAMANHO</Text>
-              <Text style={styles.gridValue}>{formatSizeBR(selectedProduct.numeracao)}</Text>
-            </View>
-            <View style={styles.gridItem}>
-              <Text style={styles.gridLabel}>COR</Text>
-              <Text style={styles.gridValue}>{selectedProduct.cor || '-'}</Text>
-            </View>
-            <View style={styles.gridItem}>
-              <Text style={styles.gridLabel}>RESERVA</Text>
-              <Text style={styles.gridValue}>{selectedProduct.tempoReserva || 24}H</Text>
-            </View>
-            <View style={styles.gridItem}>
-              <Text style={styles.gridLabel}>CONDIÇÃO</Text>
-              <Badge label={selectedProduct.condicao || 'novo'} />
+        <View style={styles.mainContent}>
+          <View style={styles.brandBox}>
+            <Text style={styles.brandName}>{selectedProduct.marca?.toUpperCase()}</Text>
+            <View style={styles.originTag}>
+              <Text style={styles.originText}>{selectedProduct.origem === 'proprio' ? 'OFFICIAL' : 'PARCEIRO'}</Text>
             </View>
           </View>
+          
+          <Text style={styles.productTitle}>{selectedProduct.modelo}</Text>
+          <Text style={styles.productPrice}>{formatCurrencyBRL(selectedProduct.preco)}</Text>
 
-          <View style={styles.divider} />
+          <View style={styles.specsGrid}>
+            <View style={styles.specItem}>
+              <Ionicons name="resize-outline" size={16} color={colors.primary} />
+              <View>
+                <Text style={styles.specLabel}>TAMANHO</Text>
+                <Text style={styles.specValue}>{formatSizeBR(selectedProduct.numeracao)}</Text>
+              </View>
+            </View>
+            <View style={styles.specItem}>
+              <Ionicons name="color-palette-outline" size={16} color={colors.primary} />
+              <View>
+                <Text style={styles.specLabel}>COR</Text>
+                <Text style={styles.specValue}>{selectedProduct.cor || 'Original'}</Text>
+              </View>
+            </View>
+            <View style={styles.specItem}>
+              <Ionicons name="time-outline" size={16} color={colors.primary} />
+              <View>
+                <Text style={styles.specLabel}>RESERVA</Text>
+                <Text style={styles.specValue}>{selectedProduct.tempoReserva || 24}H</Text>
+              </View>
+            </View>
+            <View style={styles.specItem}>
+              <Ionicons name="shield-checkmark-outline" size={16} color={colors.primary} />
+              <View>
+                <Text style={styles.specLabel}>AUTÊNTICO</Text>
+                <Text style={styles.specValue}>VERIFICADO</Text>
+              </View>
+            </View>
+          </View>
 
           {!isOwner && seller && (
-            <View style={styles.sellerSection}>
-              <Text style={styles.sectionTitle}>VENDEDOR</Text>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>VENDEDOR RESPONSÁVEL</Text>
               <View style={styles.sellerCard}>
                 <View style={styles.sellerAvatar}>
-                  <Text style={styles.avatarText}>{seller.nome?.charAt(0)}</Text>
+                  <Text style={styles.sellerInitial}>{seller.nome?.charAt(0).toUpperCase()}</Text>
                 </View>
-                <View style={styles.sellerInfo}>
+                <View style={styles.sellerMeta}>
                   <Text style={styles.sellerName}>{seller.nome?.toUpperCase()}</Text>
-                  <Text style={styles.sellerLocation}>
-                    <Ionicons name="location-outline" size={12} color={colors.textSecondary} /> {seller.cidade || 'Brasil'}
-                  </Text>
+                  <View style={styles.locationRow}>
+                    <Ionicons name="location" size={12} color={colors.primary} />
+                    <Text style={styles.locationText}>{seller.cidade || 'Brasil'}</Text>
+                  </View>
                 </View>
+                <Ionicons name="chevron-forward" size={20} color={colors.border} />
               </View>
             </View>
           )}
 
           {selectedProduct.descricao && (
-            <View style={styles.descriptionSection}>
-              <Text style={styles.sectionTitle}>SOBRE O PRODUTO</Text>
-              <Text style={styles.description}>{selectedProduct.descricao}</Text>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>HISTÓRIA E DETALHES</Text>
+              <Text style={styles.descriptionText}>{selectedProduct.descricao}</Text>
             </View>
           )}
-          
-          <View style={styles.spacer} />
+
+          <View style={styles.safeBottom} />
         </View>
       </ScreenContainer>
 
-      <View style={[styles.fixedFooter, { paddingBottom: insets.bottom + spacing.md }]}>
+      <View style={[styles.actionFooter, { paddingBottom: insets.bottom + spacing.md }]}>
         {canReserve && user ? (
-          <Button title="RESERVAR SNEAKER" onPress={handleReserve} loading={reserving} />
+          <Button title="RESERVAR AGORA" onPress={handleReserve} loading={reserving} />
         ) : isOwner ? (
           <Button
-            title="EDITAR ANÚNCIO"
+            title="GERENCIAR ANÚNCIO"
             variant="secondary"
             onPress={() => navigation.navigate(ROUTES.PRODUCT_FORM, { mode: 'edit', productId: selectedProduct.id })}
           />
         ) : (
           <Button
-            title={!user ? "LOGAR PARA RESERVAR" : selectedProduct.status === PRODUCT_STATUS.AVAILABLE ? "RESERVAR" : "INDISPONÍVEL"}
+            title={!user ? "LOGAR PARA RESERVAR" : selectedProduct.status === PRODUCT_STATUS.AVAILABLE ? "RESERVAR" : "SNEAKER VENDIDO"}
             variant="secondary"
             disabled={selectedProduct.status !== PRODUCT_STATUS.AVAILABLE}
-            onPress={() => {
-              if (!user) {
-                navigation.navigate(ROUTES.LOGIN);
-              }
-            }}
+            onPress={() => !user && navigation.navigate(ROUTES.LOGIN)}
           />
         )}
       </View>
@@ -210,189 +214,212 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  headerPadding: {
+  headerAbsolute: {
     paddingHorizontal: spacing.md,
+    zIndex: 10
   },
-  hero: {
+  heroContainer: {
     width: '100%',
     backgroundColor: colors.backgroundSecondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
     borderBottomWidth: 1,
-    borderBottomColor: colors.border
+    borderColor: colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative'
+  },
+  imageStage: {
+    width: '90%',
+    height: '80%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   heroImage: {
-    width: '85%',
-    height: '85%',
+    width: '100%',
+    height: '100%',
   },
-  placeholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroBadge: {
+  heroOverlay: {
     position: 'absolute',
-    top: spacing.md,
+    top: 60,
     right: spacing.md,
+    alignItems: 'flex-end',
+    gap: spacing.xs
   },
-  gallery: {
+  conditionChip: {
+    backgroundColor: colors.black,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.border
+  },
+  conditionText: {
+    fontSize: 8,
+    fontWeight: '900',
+    color: colors.white,
+    letterSpacing: 1
+  },
+  galleryContainer: {
+    marginTop: -32,
+    zIndex: 20
+  },
+  galleryScroll: {
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
     gap: spacing.sm,
   },
   thumb: {
     width: 64,
     height: 64,
-    borderRadius: 8,
+    borderRadius: 12,
     backgroundColor: colors.surface,
-    borderWidth: 2,
-    borderColor: colors.transparent,
+    borderWidth: 1,
+    borderColor: colors.border,
     overflow: 'hidden',
+    ...themeShadows.soft
   },
   thumbActive: {
     borderColor: colors.primary,
+    borderWidth: 2
   },
   thumbImage: {
     width: '100%',
     height: '100%',
   },
-  content: {
+  mainContent: {
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
+    paddingTop: spacing.xl,
   },
-  mainInfo: {
-    marginBottom: spacing.xl,
-  },
-  brandRow: {
+  brandBox: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: 4
   },
-  brand: {
-    ...typography.caption,
+  brandName: {
     fontSize: 12,
     fontWeight: '900',
-    color: colors.textSecondary,
-    letterSpacing: 1.5,
+    color: colors.textCaption,
+    letterSpacing: 2
   },
-  origem: {
-    ...typography.caption,
-    fontSize: 10,
-    fontWeight: '800',
-    color: colors.accent,
+  originTag: {
+    backgroundColor: 'rgba(249, 115, 22, 0.1)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4
   },
-  model: {
-    ...typography.h1,
-    fontSize: 34,
+  originText: {
+    fontSize: 8,
     fontWeight: '900',
-    marginTop: 4,
-    lineHeight: 38,
-    color: colors.white
+    color: colors.primary
   },
-  price: {
-    ...typography.price,
-    fontSize: 30,
-    marginTop: spacing.sm,
+  productTitle: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: colors.white,
+    lineHeight: 36
+  },
+  productPrice: {
+    fontSize: 28,
+    fontWeight: '900',
     color: colors.primary,
-    fontWeight: '900'
+    marginTop: spacing.sm
   },
-  grid: {
+  specsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.md,
-    marginBottom: spacing.xl,
-  },
-  gridItem: {
-    width: '48%',
+    marginTop: spacing.xl,
     padding: spacing.md,
     backgroundColor: colors.surface,
-    borderRadius: 8,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
+    borderColor: colors.border
   },
-  gridLabel: {
-    ...typography.caption,
-    fontSize: 9,
+  specItem: {
+    width: '46%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm
+  },
+  specLabel: {
+    fontSize: 8,
     fontWeight: '900',
     color: colors.textCaption,
-    marginBottom: 4,
-    letterSpacing: 1
+    letterSpacing: 0.5
   },
-  gridValue: {
-    ...typography.body,
-    fontWeight: '900',
-    color: colors.white,
+  specValue: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: colors.white
   },
-  divider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginBottom: spacing.xl,
+  section: {
+    marginTop: spacing.xl,
   },
   sectionTitle: {
-    ...typography.caption,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '900',
-    color: colors.textSecondary,
-    marginBottom: spacing.md,
+    color: colors.textCaption,
     letterSpacing: 1.5,
-  },
-  sellerSection: {
-    marginBottom: spacing.xl,
+    marginBottom: spacing.md
   },
   sellerCard: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: spacing.md,
     backgroundColor: colors.surface,
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
+    gap: spacing.md
   },
   sellerAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.primary,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.backgroundSecondary,
+    borderWidth: 1,
+    borderColor: colors.border,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.md,
+    justifyContent: 'center'
   },
-  avatarText: {
-    color: colors.black,
-    fontSize: 20,
-    fontWeight: '900',
+  sellerInitial: {
+    color: colors.primary,
+    fontSize: 18,
+    fontWeight: '900'
   },
-  sellerInfo: {
-    flex: 1,
+  sellerMeta: {
+    flex: 1
   },
   sellerName: {
-    ...typography.body,
+    fontSize: 14,
     fontWeight: '900',
-    color: colors.white,
+    color: colors.white
   },
-  sellerLocation: {
-    ...typography.caption,
-    marginTop: 2,
-    fontSize: 11
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2
   },
-  descriptionSection: {
-    marginBottom: spacing.xxl,
-  },
-  description: {
-    ...typography.body,
-    lineHeight: 24,
+  locationText: {
+    fontSize: 11,
     color: colors.textSecondary,
+    fontWeight: '700'
   },
-  spacer: {
-    height: 120,
+  descriptionText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    lineHeight: 22,
+    fontWeight: '500'
   },
-  fixedFooter: {
+  safeBottom: {
+    height: 140
+  },
+  actionFooter: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: colors.surface, // #1E1E1E
+    backgroundColor: colors.background,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.md,
     borderTopWidth: 1,

@@ -11,24 +11,25 @@ import { ROUTES } from '../../app/routes/routeNames';
 import { USER_TYPES } from '../../constants/userTypes';
 import { colors } from '../../theme/colors';
 import { radius } from '../../theme/radius';
+import { themeShadows } from '../../theme/themeShadows';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 
-function MetricCard({ 
+function Metric({ 
   label, 
   value, 
-  icon, 
-  color = colors.primary 
+  icon,
+  color = colors.primary
 }: { 
   label: string; 
-  value: string | number; 
+  value: number; 
   icon: keyof typeof Ionicons.glyphMap;
   color?: string;
 }) {
   return (
-    <View style={styles.metricCard}>
-      <View style={[styles.metricIcon, { backgroundColor: 'rgba(255, 255, 255, 0.05)' }]}>
-        <Ionicons name={icon} size={20} color={color} />
+    <View style={styles.metricItem}>
+      <View style={[styles.metricIconWrap, { backgroundColor: `${color}15` }]}>
+        <Ionicons name={icon} size={18} color={color} />
       </View>
       <View>
         <Text style={styles.metricValue}>{value}</Text>
@@ -38,27 +39,39 @@ function MetricCard({
   );
 }
 
-function ActionCard({ 
+function HubAction({ 
   title, 
+  subtitle,
   icon, 
-  onPress 
+  onPress,
+  variant = 'default'
 }: { 
   title: string; 
+  subtitle: string;
   icon: keyof typeof Ionicons.glyphMap; 
   onPress: () => void;
+  variant?: 'default' | 'primary' | 'outline'
 }) {
   return (
     <Pressable 
-      style={({ pressed }) => [styles.actionCard, pressed && styles.pressed]} 
+      style={({ pressed }) => [
+        styles.hubBtn, 
+        variant === 'primary' && styles.hubBtnPrimary,
+        pressed && styles.pressed
+      ]} 
       onPress={() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         onPress();
       }}
     >
-      <View style={styles.actionIcon}>
-        <Ionicons name={icon} size={24} color={colors.primary} />
+      <View style={[styles.hubIconBox, variant === 'primary' && { backgroundColor: 'rgba(0,0,0,0.2)' }]}>
+        <Ionicons name={icon} size={24} color={variant === 'primary' ? colors.black : colors.primary} />
       </View>
-      <Text style={styles.actionTitle}>{title.toUpperCase()}</Text>
+      <View style={styles.hubTextContent}>
+        <Text style={[styles.hubTitle, variant === 'primary' && { color: colors.black }]}>{title.toUpperCase()}</Text>
+        <Text style={[styles.hubSubtitle, variant === 'primary' && { color: 'rgba(0,0,0,0.6)' }]}>{subtitle}</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={variant === 'primary' ? 'rgba(0,0,0,0.3)' : colors.textCaption} />
     </Pressable>
   );
 }
@@ -69,240 +82,271 @@ export default function DashboardScreen({ navigation }: any) {
   const { transactions } = useTransactions();
   const isAdmin = user?.tipo === USER_TYPES.ADMIN;
 
-  const firstName = user?.nome?.split(' ')[0] || 'Usuário';
+  const firstName = user?.nome?.split(' ')[0] || 'Sneakerhead';
   const totalReservations = reservations?.length || 0;
   const totalTransactions = transactions?.length || 0;
-  const now = new Date();
-  const hour = now.getHours();
-  const periodLabel = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
-  const roleLabel = user?.tipo ? String(user.tipo).toUpperCase() : 'COMUM';
-  const todayLabel = now.toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: 'short'
-  });
 
   return (
     <ScreenContainer scroll backgroundColor={colors.background}>
       <Header
-        title={`${periodLabel}, ${firstName}`}
-        subtitle="Seu painel de controle para vitrine, reservas e vendas."
+        title={`SALVE, ${firstName}`}
+        subtitle="Sua central de comando Nine Half"
         rightAction={
           <Pressable 
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               navigation.navigate(ROUTES.PROFILE);
             }} 
-            style={styles.avatar}
+            style={styles.profileTrigger}
           >
-            <Ionicons name="person-circle" size={44} color={colors.white} />
+            <View style={styles.avatarCircle}>
+              <Text style={styles.avatarText}>{firstName.charAt(0).toUpperCase()}</Text>
+            </View>
           </Pressable>
         }
       />
 
-      <View style={styles.contextRow}>
-        <View style={styles.contextChip}>
-          <Ionicons name="calendar-outline" size={14} color={colors.textSecondary} />
-          <Text style={styles.contextText}>{todayLabel}</Text>
+      <View style={styles.statsPanel}>
+        <View style={styles.statsHeader}>
+          <Text style={styles.statsTitle}>PERFORMANCE GERAL</Text>
+          <View style={styles.liveIndicator}>
+            <View style={styles.liveDot} />
+            <Text style={styles.liveText}>AO VIVO</Text>
+          </View>
         </View>
-        <View style={styles.contextChip}>
-          <Ionicons name="shield-outline" size={14} color={colors.textSecondary} />
-          <Text style={styles.contextText}>{roleLabel}</Text>
+        
+        <View style={styles.metricsRow}>
+          <Metric label="Reservas" value={totalReservations} icon="bookmark" color={colors.accent} />
+          <View style={styles.vDivider} />
+          <Metric label="Vendas" value={totalTransactions} icon="checkmark-done" color={colors.success} />
+          <View style={styles.vDivider} />
+          <Metric label="Estoque" value={0} icon="cube" />
         </View>
       </View>
 
-      <View style={styles.metricsContainer}>
-        <MetricCard 
-          label="Reservas" 
-          value={totalReservations} 
-          icon="bookmark" 
-          color={colors.accent} 
+      <View style={styles.hubSection}>
+        <Text style={styles.sectionHeader}>GESTÃO DE INVENTÁRIO</Text>
+        <HubAction
+          title="Minha Vitrine"
+          subtitle="Gerenciar seus sneakers e anúncios"
+          icon="storefront"
+          variant="primary"
+          onPress={() => navigation.navigate(ROUTES.SHOWCASE)}
         />
-        <MetricCard 
-          label="Vendas" 
-          value={totalTransactions} 
-          icon="receipt" 
-          color={colors.success} 
+        <HubAction
+          title="Estoque Global"
+          subtitle="Explorar sneakers de toda a rede"
+          icon="search"
+          onPress={() => navigation.navigate(ROUTES.GLOBAL_STOCK)}
         />
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>AÇÕES RÁPIDAS</Text>
-        <View style={styles.grid}>
-          <ActionCard
-            title="Minha Vitrine"
-            icon="storefront-outline"
-            onPress={() => navigation.navigate(ROUTES.SHOWCASE)}
-          />
-          <ActionCard
-            title="Estoque Global"
-            icon="search-outline"
-            onPress={() => navigation.navigate(ROUTES.GLOBAL_STOCK)}
-          />
-          <ActionCard
-            title="Reservas Ativas"
-            icon="bookmark-outline"
+      <View style={styles.hubSection}>
+        <Text style={styles.sectionHeader}>NEGOCIAÇÕES</Text>
+        <View style={styles.hubGrid}>
+          <Pressable 
+            style={[styles.miniHubCard, { flex: 1 }]}
             onPress={() => navigation.navigate(ROUTES.MY_RESERVATIONS)}
-          />
-          <ActionCard
-            title="Minhas Vendas"
-            icon="card-outline"
+          >
+            <Ionicons name="bookmark-outline" size={20} color={colors.white} />
+            <Text style={styles.miniHubTitle}>RESERVAS</Text>
+          </Pressable>
+          <Pressable 
+            style={[styles.miniHubCard, { flex: 1 }]}
             onPress={() => navigation.navigate(ROUTES.MY_TRANSACTIONS)}
+          >
+            <Ionicons name="receipt-outline" size={20} color={colors.white} />
+            <Text style={styles.miniHubTitle}>VENDAS</Text>
+          </Pressable>
+        </View>
+      </View>
+
+      {isAdmin && (
+        <View style={styles.hubSection}>
+          <Text style={styles.sectionHeader}>ADMINISTRAÇÃO</Text>
+          <HubAction
+            title="Painel Administrativo"
+            subtitle="Controle total da plataforma"
+            icon="shield-checkmark"
+            onPress={() => navigation.navigate(ROUTES.ADMIN_DASHBOARD)}
           />
-          {isAdmin ? (
-            <ActionCard
-              title="Painel Admin"
-              icon="shield-checkmark-outline"
-              onPress={() => navigation.navigate(ROUTES.ADMIN_DASHBOARD)}
-            />
-          ) : null}
         </View>
-      </View>
+      )}
 
-      <View style={styles.banner}>
-        <View style={styles.bannerContent}>
-          <Text style={styles.bannerTitle}>HYPE & CULTURE</Text>
-          <Text style={styles.bannerText}>Gerencie seu estoque como um profissional do mercado.</Text>
-        </View>
-        <Ionicons name="trending-up" size={40} color={colors.primary} />
-      </View>
-
+      <View style={styles.bottomSpacer} />
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  avatar: {
-    padding: 4,
+  profileTrigger: {
+    padding: 2,
   },
-  metricsContainer: {
-    flexDirection: 'row',
-    gap: spacing.md,
+  avatarCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  avatarText: {
+    color: colors.primary,
+    fontWeight: '900',
+    fontSize: 16
+  },
+  statsPanel: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: spacing.lg,
     marginTop: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...themeShadows.medium
   },
-  contextRow: {
+  statsHeader: {
     flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.sm
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.lg
   },
-  contextChip: {
+  statsTitle: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: colors.textCaption,
+    letterSpacing: 1.5
+  },
+  liveIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4
   },
-  contextText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    fontSize: 11,
-    fontWeight: '800'
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.danger
   },
-  metricCard: {
-    flex: 1,
+  liveText: {
+    fontSize: 8,
+    fontWeight: '900',
+    color: colors.danger
+  },
+  metricsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    padding: spacing.md,
-    borderRadius: 12,
-    gap: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
+    justifyContent: 'space-between'
   },
-  metricIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
+  metricItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 8
+  },
+  metricIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 4
   },
   metricValue: {
-    ...typography.h3,
     fontSize: 20,
     fontWeight: '900',
     color: colors.white,
+    textAlign: 'center'
   },
   metricLabel: {
-    ...typography.caption,
-    fontSize: 10,
-    color: colors.textSecondary,
+    fontSize: 8,
+    color: colors.textCaption,
     fontWeight: '800',
+    textAlign: 'center'
   },
-  section: {
+  vDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: colors.border,
+    opacity: 0.5
+  },
+  hubSection: {
     marginTop: spacing.xl,
+    gap: spacing.sm
   },
-  sectionTitle: {
-    ...typography.caption,
-    fontSize: 12,
+  sectionHeader: {
+    fontSize: 11,
     fontWeight: '900',
     color: colors.textSecondary,
-    marginBottom: spacing.md,
-    letterSpacing: 1.5,
+    marginBottom: spacing.xs,
+    letterSpacing: 1,
+    paddingHorizontal: 4
   },
-  grid: {
+  hubBtn: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.md,
-  },
-  actionCard: {
-    width: '47.5%',
+    alignItems: 'center',
     backgroundColor: colors.surface,
     padding: spacing.lg,
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
+    gap: spacing.md
   },
-  pressed: {
+  hubBtnPrimary: {
+    backgroundColor: colors.primary,
     borderColor: colors.primary,
-    backgroundColor: colors.backgroundSecondary,
   },
-  actionIcon: {
+  hubIconBox: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: 12,
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
+    justifyContent: 'center'
   },
-  actionTitle: {
-    ...typography.body,
-    fontSize: 12,
+  hubTextContent: {
+    flex: 1
+  },
+  hubTitle: {
+    fontSize: 15,
     fontWeight: '900',
     color: colors.white,
-    textAlign: 'center',
     letterSpacing: 0.5
   },
-  banner: {
-    marginTop: spacing.xl,
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: spacing.lg,
+  hubSubtitle: {
+    fontSize: 11,
+    color: colors.textCaption,
+    marginTop: 2,
+    fontWeight: '600'
+  },
+  hubGrid: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: spacing.sm
+  },
+  miniHubCard: {
+    backgroundColor: colors.surface,
+    padding: spacing.lg,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
+    alignItems: 'center',
+    gap: spacing.xs
   },
-  bannerContent: {
-    flex: 1,
-  },
-  bannerTitle: {
-    ...typography.h3,
-    fontSize: 18,
+  miniHubTitle: {
+    fontSize: 10,
     fontWeight: '900',
     color: colors.white,
-    letterSpacing: 0.5
+    marginTop: 4
   },
-  bannerText: {
-    ...typography.body,
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginTop: 4,
+  pressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.98 }]
   },
+  bottomSpacer: {
+    height: spacing.xxl
+  }
 });

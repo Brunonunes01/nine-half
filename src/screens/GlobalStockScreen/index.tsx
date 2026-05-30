@@ -5,16 +5,17 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import ScreenContainer from '../../components/layout/ScreenContainer';
 import Header from '../../components/layout/Header';
-import EmptyState from '../../components/ui/EmptyState';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
+import EmptyState from '../../components/ui/EmptyState';
 import ProductCard from '../../components/domain/ProductCard';
 import { ProductCardSkeleton } from '../../components/ui/Skeleton/ProductCardSkeleton';
-import { ROUTES } from '../../app/routes/routeNames';
 import { useAuth } from '../../hooks/useAuth';
-import { DEFAULT_GLOBAL_FILTERS, useGlobalStock } from '../../hooks/useGlobalStock';
+import { useGlobalStock, DEFAULT_GLOBAL_FILTERS } from '../../hooks/useGlobalStock';
+import { ROUTES } from '../../app/routes/routeNames';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
+import { themeShadows } from '../../theme/themeShadows';
 import { typography } from '../../theme/typography';
 
 export default function GlobalStockScreen({ navigation }: any) {
@@ -42,24 +43,21 @@ export default function GlobalStockScreen({ navigation }: any) {
   );
 
   const handleToggleFilters = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setShowFilters(!showFilters);
   };
 
   return (
-    <ScreenContainer withPadding={false} backgroundColor={colors.background}>
-      <View style={styles.headerPadding}>
-        <Header
-          title="Estoque Global"
-          subtitle="Explore os melhores sneakers do mercado."
-          showBack
-          rightAction={
-            <Pressable onPress={handleToggleFilters} style={styles.filterBtn}>
-              <Ionicons name={showFilters ? 'close' : 'options-outline'} size={24} color={colors.white} />
-            </Pressable>
-          }
-        />
-      </View>
+    <ScreenContainer backgroundColor={colors.background}>
+      <Header 
+        title="ESTOQUE GLOBAL" 
+        subtitle="Explore a coleção da rede"
+        rightAction={
+          <Pressable onPress={handleToggleFilters} style={styles.filterBtn}>
+            <Ionicons name="options-outline" size={22} color={showFilters ? colors.primary : colors.white} />
+          </Pressable>
+        }
+      />
 
       <FlatList
         data={loading && products.length === 0 ? [1, 2, 3, 4, 5, 6] : products}
@@ -73,15 +71,17 @@ export default function GlobalStockScreen({ navigation }: any) {
         stickyHeaderIndices={[0]}
         ListHeaderComponent={
           <View style={styles.stickyHeader}>
-            <View style={styles.searchContainer}>
-              <Ionicons name="search" size={20} color={colors.textCaption} style={styles.searchIcon} />
-              <Input
-                value={filters.searchText}
-                onChangeText={(v) => updateFilters({ searchText: v })}
-                placeholder="Modelo, marca, cor ou tamanho..."
-                style={styles.searchInput}
-                onSubmitEditing={() => loadInitialProducts()}
-              />
+            <View style={styles.searchRow}>
+              <View style={styles.searchBarWrap}>
+                <Ionicons name="search" size={18} color={colors.textCaption} style={styles.searchIcon} />
+                <Input
+                  value={filters.searchText}
+                  onChangeText={(v) => updateFilters({ searchText: v })}
+                  placeholder="Buscar modelo ou tamanho..."
+                  style={styles.minimalSearch}
+                  onSubmitEditing={() => loadInitialProducts()}
+                />
+              </View>
             </View>
 
             {error ? (
@@ -91,8 +91,9 @@ export default function GlobalStockScreen({ navigation }: any) {
               </View>
             ) : null}
 
-            {showFilters ? (
+            {showFilters && (
               <View style={styles.filtersPanel}>
+                <Text style={styles.filterSectionTitle}>FILTROS AVANÇADOS</Text>
                 <View style={styles.filterRow}>
                   <View style={styles.filterCol}>
                     <Input
@@ -116,7 +117,7 @@ export default function GlobalStockScreen({ navigation }: any) {
                 <View style={styles.filterRow}>
                   <View style={styles.filterCol}>
                     <Input
-                      label="PRECO MIN"
+                      label="MÍNIMO"
                       value={filters.minPrice}
                       onChangeText={(v) => updateFilters({ minPrice: v })}
                       keyboardType="numeric"
@@ -125,11 +126,11 @@ export default function GlobalStockScreen({ navigation }: any) {
                   </View>
                   <View style={styles.filterCol}>
                     <Input
-                      label="PRECO MAX"
+                      label="MÁXIMO"
                       value={filters.maxPrice}
                       onChangeText={(v) => updateFilters({ maxPrice: v })}
                       keyboardType="numeric"
-                      placeholder="R$ 9999"
+                      placeholder="R$ 9k"
                     />
                   </View>
                 </View>
@@ -143,36 +144,10 @@ export default function GlobalStockScreen({ navigation }: any) {
                       onPress={() => updateFilters({ origem: o })}
                     >
                       <Text style={[styles.chipText, filters.origem === o && styles.chipTextActive]}>
-                        {o === 'todos' ? 'TODOS' : o === 'proprio' ? 'PRÓPRIO' : 'PARCEIRO'}
+                        {o.toUpperCase()}
                       </Text>
                     </Pressable>
                   ))}
-                </View>
-
-                <Text style={styles.filterSectionTitle}>ORDENAR POR</Text>
-                <View style={styles.chipRow}>
-                  <Pressable
-                    style={[styles.chip, filters.orderByField === 'createdAt' && styles.chipActive]}
-                    onPress={() => updateFilters({ orderByField: 'createdAt', orderDirection: 'desc' })}
-                  >
-                    <Text style={[styles.chipText, filters.orderByField === 'createdAt' && styles.chipTextActive]}>RECENTES</Text>
-                  </Pressable>
-                  <Pressable
-                    style={[styles.chip, filters.orderByField === 'precoNumber' && filters.orderDirection === 'asc' && styles.chipActive]}
-                    onPress={() => updateFilters({ orderByField: 'precoNumber', orderDirection: 'asc' })}
-                  >
-                    <Text style={[styles.chipText, filters.orderByField === 'precoNumber' && filters.orderDirection === 'asc' && styles.chipTextActive]}>MENOR PREÇO</Text>
-                  </Pressable>
-                </View>
-
-                <View style={styles.switchRow}>
-                  <Text style={styles.switchLabel}>Ocultar meus produtos</Text>
-                  <Switch
-                    value={filters.hideMyProducts !== false}
-                    onValueChange={(value) => updateFilters({ hideMyProducts: value })}
-                    thumbColor={filters.hideMyProducts !== false ? colors.primary : colors.textCaption}
-                    trackColor={{ false: colors.border, true: 'rgba(249, 115, 22, 0.35)' }}
-                  />
                 </View>
 
                 <Button
@@ -184,7 +159,7 @@ export default function GlobalStockScreen({ navigation }: any) {
                   }}
                 />
               </View>
-            ) : null}
+            )}
           </View>
         }
         renderItem={({ item }) => {
@@ -195,7 +170,6 @@ export default function GlobalStockScreen({ navigation }: any) {
               </View>
             );
           }
-
           return (
             <View style={styles.cardWrapper}>
               <ProductCard
@@ -214,22 +188,29 @@ export default function GlobalStockScreen({ navigation }: any) {
                 title="CARREGAR MAIS"
                 variant="secondary"
                 onPress={loadMoreProducts}
-                fullWidth={false}
+                loading={loading}
                 style={styles.loadMoreBtn}
               />
+            </View>
+          ) : products.length > 0 ? (
+            <View style={styles.footer}>
+              <Text style={styles.endText}>VOCÊ CHEGOU AO FIM DO ESTOQUE</Text>
             </View>
           ) : null
         }
         ListEmptyComponent={
-          <EmptyState
-            title="Nenhum par encontrado"
-            description="Tente ajustar sua busca ou filtros para encontrar o que procura."
-            actionLabel="LIMPAR FILTROS"
-            onAction={() => {
-              clearFilters();
-              loadInitialProducts(DEFAULT_GLOBAL_FILTERS);
-            }}
-          />
+          !loading ? (
+            <EmptyState
+              title="NENHUM SNEAKER ENCONTRADO"
+              description="Tente ajustar seus filtros ou busca."
+              icon="search-outline"
+              actionLabel="LIMPAR FILTROS"
+              onAction={() => {
+                clearFilters();
+                loadInitialProducts(DEFAULT_GLOBAL_FILTERS);
+              }}
+            />
+          ) : null
         }
       />
     </ScreenContainer>
@@ -237,9 +218,6 @@ export default function GlobalStockScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  headerPadding: {
-    paddingHorizontal: spacing.md
-  },
   filterBtn: {
     width: 44,
     height: 44,
@@ -248,80 +226,60 @@ const styles = StyleSheet.create({
   },
   stickyHeader: {
     backgroundColor: colors.background,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border
+    paddingBottom: spacing.sm
   },
-  searchContainer: {
-    position: 'relative',
-    marginTop: spacing.sm
+  searchRow: {
+    paddingHorizontal: spacing.md,
+    marginTop: spacing.xs
+  },
+  searchBarWrap: {
+    position: 'relative'
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: 16,
+    top: 18,
+    zIndex: 1
+  },
+  minimalSearch: {
+    backgroundColor: colors.surface,
+    paddingLeft: 44,
+    height: 52,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border
   },
   errorBanner: {
     backgroundColor: colors.danger,
     padding: spacing.sm,
     borderRadius: 8,
+    marginHorizontal: spacing.md,
     marginTop: spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs
   },
   errorText: {
-    ...typography.caption,
     color: colors.white,
     fontSize: 10,
     fontWeight: '800'
   },
-  searchIcon: {
-    position: 'absolute',
-    left: spacing.md,
-    top: 18,
-    zIndex: 1
-  },
-  searchInput: {
-    marginBottom: 0
-  },
   filtersPanel: {
-    marginTop: spacing.md,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.sm,
     padding: spacing.md,
     backgroundColor: colors.surface,
-    borderRadius: 8,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.border
+    borderColor: colors.border,
+    ...themeShadows.medium
   },
   filterSectionTitle: {
-    ...typography.caption,
     fontSize: 9,
     fontWeight: '900',
     color: colors.textCaption,
-    marginTop: spacing.md,
     marginBottom: spacing.sm,
-    letterSpacing: 1
-  },
-  chipRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.sm
-  },
-  chip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.border
-  },
-  chipActive: {
-    backgroundColor: 'rgba(249, 115, 22, 0.1)',
-    borderColor: colors.primary
-  },
-  chipText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: colors.textSecondary
-  },
-  chipTextActive: {
-    color: colors.primary
+    letterSpacing: 1.5
   },
   filterRow: {
     flexDirection: 'row',
@@ -330,31 +288,41 @@ const styles = StyleSheet.create({
   filterCol: {
     flex: 1
   },
-  switchRow: {
-    marginTop: spacing.sm,
-    marginBottom: spacing.md,
-    paddingVertical: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+  chipRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between'
+    gap: spacing.sm,
+    marginBottom: spacing.lg
   },
-  switchLabel: {
-    ...typography.body,
-    color: colors.white,
-    fontWeight: '700'
+  chip: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center'
+  },
+  chipActive: {
+    backgroundColor: 'rgba(249, 115, 22, 0.1)',
+    borderColor: colors.primary
+  },
+  chipText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: colors.textSecondary
+  },
+  chipTextActive: {
+    color: colors.primary
   },
   listContent: {
     paddingBottom: spacing.xxl
   },
   columnWrapper: {
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    marginTop: spacing.md
+    paddingHorizontal: spacing.md
   },
   cardWrapper: {
-    width: '48%'
+    width: '48.5%'
   },
   footer: {
     padding: spacing.xl,
@@ -362,5 +330,11 @@ const styles = StyleSheet.create({
   },
   loadMoreBtn: {
     minWidth: 200
+  },
+  endText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: colors.textCaption,
+    letterSpacing: 2
   }
 });
