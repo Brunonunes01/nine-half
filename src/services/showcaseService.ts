@@ -57,8 +57,7 @@ export async function toggleShowcaseVisibility(showcaseId: string, visivel: bool
     // É crucial filtrar por ownerId para satisfazer as regras de segurança do Firestore
     const q = query(
       collection(firestore, 'products'), 
-      where('showcaseId', '==', showcaseId),
-      where('ownerId', '==', userId)
+      where('showcaseId', '==', showcaseId)
     );
     
     const productsSnapshot = await getDocs(q);
@@ -73,9 +72,11 @@ export async function toggleShowcaseVisibility(showcaseId: string, visivel: bool
     // 3. Batch update
     const batch = writeBatch(firestore);
     productsSnapshot.docs.forEach((item) => {
-      batch.update(item.ref, { 
-        showcaseVisible: visivel, 
-        updatedAt: serverTimestamp() 
+      const data = item.data() as any;
+      if (data?.ownerId !== userId) return;
+      batch.update(item.ref, {
+        showcaseVisible: visivel,
+        updatedAt: serverTimestamp()
       });
     });
 

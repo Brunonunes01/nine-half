@@ -12,6 +12,7 @@ import { PAYMENT_METHODS, getPaymentMethodLabel } from '../../constants/paymentM
 import { useAuth } from '../../hooks/useAuth';
 import { useReservations } from '../../hooks/useReservations';
 import { useTransactions } from '../../hooks/useTransactions';
+import { RESERVATION_STATUS } from '../../constants/reservationStatus';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 
@@ -31,6 +32,11 @@ export default function MyReservationsScreen() {
     useCallback(() => {
       refresh();
     }, [refresh])
+  );
+
+  const activeReservations = useMemo(
+    () => reservations.filter(r => r.status === RESERVATION_STATUS.ACTIVE),
+    [reservations]
   );
 
   async function handleCancel(reservation: any) {
@@ -118,11 +124,11 @@ export default function MyReservationsScreen() {
         </View>
       ) : null}
 
-      {loading && reservations.length === 0 ? (
+      {loading && activeReservations.length === 0 ? (
         <Loading text="ATUALIZANDO..." />
       ) : (
         <FlatList
-          data={reservations}
+          data={activeReservations}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
@@ -139,7 +145,7 @@ export default function MyReservationsScreen() {
           ListEmptyComponent={
             <EmptyState
               title="Sem reservas ativas"
-              description="Quando voce ou um comprador iniciar uma negociacao, ela aparecera aqui."
+              description="Quando você ou um comprador iniciar uma negociação, ela aparecerá aqui."
               icon="bookmark-outline"
             />
           }
