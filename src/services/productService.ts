@@ -33,7 +33,12 @@ export async function createProduct(productData) {
   });
 
   const precoNumber = Number(String(product.preco || '0').replace(',', '.')) || 0;
-  const keywords = buildProductSearchKeywords({ modelo: product.modelo, marca: product.marca, cor: product.cor });
+  const keywords = buildProductSearchKeywords({ 
+    modelo: product.modelo, 
+    marca: product.marca, 
+    cor: product.cor,
+    numeracao: product.numeracao 
+  });
   
   const payload = {
     ...product,
@@ -71,14 +76,16 @@ export async function getProductsByOwner(ownerId) {
 }
 
 export async function getProductsByShowcase(showcaseId, ownerId) {
+  // A vitrine já é vinculada ao dono; filtrar apenas por showcaseId evita
+  // depender de índice composto desnecessário no carregamento da vitrine.
   const q = query(
     collection(firestore, PRODUCTS_COLLECTION),
-    where('showcaseId', '==', showcaseId),
-    where('ownerId', '==', ownerId)
+    where('showcaseId', '==', showcaseId)
   );
   const snapshot = await getDocs(q);
   return snapshot.docs
     .map((item) => ({ id: item.id, ...item.data() }))
+    .filter((item: any) => !ownerId || item.ownerId === ownerId)
     .sort((a: any, b: any) => {
       const aTime = a?.createdAt?.seconds || 0;
       const bTime = b?.createdAt?.seconds || 0;
@@ -127,11 +134,19 @@ export async function updateProduct(productId, data) {
   delete payload.status;
   delete payload.createdAt;
 
-  if (payload.modelo || payload.marca || payload.cor !== undefined) {
+  if (payload.modelo || payload.marca || payload.cor !== undefined || payload.numeracao !== undefined) {
     const model = String(payload.modelo ?? current?.modelo ?? '').trim();
     const brand = String(payload.marca ?? current?.marca ?? '').trim();
     const color = String(payload.cor ?? current?.cor ?? '').trim();
-    const keywords = buildProductSearchKeywords({ modelo: model, marca: brand, cor: color });
+    const size = String(payload.numeracao ?? current?.numeracao ?? '').trim();
+    
+    const keywords = buildProductSearchKeywords({ 
+      modelo: model, 
+      marca: brand, 
+      cor: color,
+      numeracao: size 
+    });
+    
     payload.modeloLower = model.toLowerCase();
     payload.marcaLower = brand.toLowerCase();
     payload.searchKeywords = keywords;

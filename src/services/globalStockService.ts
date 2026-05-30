@@ -13,16 +13,19 @@ import { firestore } from './firebase/firestore';
 export function buildProductSearchKeywords({
   modelo,
   marca,
-  cor
+  cor,
+  numeracao
 }: {
   modelo: string;
   marca: string;
   cor?: string;
+  numeracao?: string;
 }) {
   const normalize = (value: string) => String(value || '').trim().toLowerCase();
   const model = normalize(modelo);
   const brand = normalize(marca);
   const color = normalize(cor || '');
+  const size = normalize(numeracao || '');
 
   const tokens = new Set<string>();
   const addTokens = (value: string) => {
@@ -40,6 +43,8 @@ export function buildProductSearchKeywords({
   addTokens(model);
   addTokens(brand);
   addTokens(color);
+  if (size) tokens.add(size);
+  
   return Array.from(tokens);
 }
 
@@ -62,11 +67,6 @@ function buildQuery({
     where('showcaseVisible', '==', true)
   ];
 
-  if (filters.searchText?.trim()) {
-    const token = filters.searchText.trim().toLowerCase();
-    constraints.push(where('searchKeywords', 'array-contains', token));
-  }
-
   if (filters.marca?.trim()) {
     constraints.push(where('marcaLower', '==', filters.marca.trim().toLowerCase()));
   }
@@ -76,32 +76,39 @@ function buildQuery({
   }
 
   if (filters.origem && filters.origem !== 'todos') {
-    const origem = String(filters.origem).toLowerCase();
-    if (origem === 'proprio' || origem === 'parceiro') {
-      constraints.push(where('origem', '==', origem));
-    }
+    constraints.push(where('origem', '==', String(filters.origem).toLowerCase()));
+  }
+
+  if (filters.searchText?.trim()) {
+    const token = filters.searchText.trim().toLowerCase();
+    constraints.push(where('searchKeywords', 'array-contains', token));
   }
 
   const hasPriceRange = Boolean(filters.minPrice || filters.maxPrice);
   const requestedOrderField = filters.orderByField || 'createdAt';
   const requestedDirection = filters.orderDirection || 'desc';
 
-  // Com filtro de faixa de preco, Firestore exige que a ordenacao inicial seja no campo de faixa.
   let orderField = requestedOrderField;
   let orderDirection = requestedDirection;
-  if (hasPriceRange && requestedOrderField === 'createdAt') {
-    orderField = 'precoNumber';
-    orderDirection = 'asc';
-  }
 
-  if (filters.minPrice) {
-    constraints.push(where('precoNumber', '>=', parsePrice(filters.minPrice)));
-  }
-  if (filters.maxPrice) {
-    constraints.push(where('precoNumber', '<=', parsePrice(filters.maxPrice)));
+  if (hasPriceRange) {
+    // Se houver faixa de preço, o primeiro orderBy PRECISA ser no precoNumber
+    orderField = 'precoNumber';
+    if (filters.minPrice) {
+      constraints.push(where('precoNumber', '>=', parsePrice(filters.minPrice)));
+    }
+    if (filters.maxPrice) {
+      constraints.push(where('precoNumber', '<=', parsePrice(filters.maxPrice)));
+    }
   }
 
   constraints.push(orderBy(orderField, orderDirection));
+  
+  // Se estivermos ordenando por preço, adicionamos createdAt como critério de desempate
+  if (orderField === 'precoNumber') {
+    constraints.push(orderBy('createdAt', 'desc'));
+  }
+
   constraints.push(limit(pageSize));
 
   if (lastVisible) {

@@ -25,6 +25,7 @@ export default function GlobalStockScreen({ navigation }: any) {
     products,
     loading,
     refreshing,
+    error,
     filters,
     hasMore,
     loadInitialProducts,
@@ -36,8 +37,8 @@ export default function GlobalStockScreen({ navigation }: any) {
 
   useFocusEffect(
     useCallback(() => {
-      if (user?.uid) loadInitialProducts();
-    }, [user?.uid, loadInitialProducts])
+      loadInitialProducts();
+    }, [loadInitialProducts])
   );
 
   const handleToggleFilters = () => {
@@ -69,6 +70,7 @@ export default function GlobalStockScreen({ navigation }: any) {
         onRefresh={refreshProducts}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        stickyHeaderIndices={[0]}
         ListHeaderComponent={
           <View style={styles.stickyHeader}>
             <View style={styles.searchContainer}>
@@ -76,11 +78,18 @@ export default function GlobalStockScreen({ navigation }: any) {
               <Input
                 value={filters.searchText}
                 onChangeText={(v) => updateFilters({ searchText: v })}
-                placeholder="Modelo, marca ou cor..."
+                placeholder="Modelo, marca, cor ou tamanho..."
                 style={styles.searchInput}
                 onSubmitEditing={() => loadInitialProducts()}
               />
             </View>
+
+            {error ? (
+              <View style={styles.errorBanner}>
+                <Ionicons name="alert-circle" size={16} color={colors.white} />
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            ) : null}
 
             {showFilters ? (
               <View style={styles.filtersPanel}>
@@ -123,6 +132,37 @@ export default function GlobalStockScreen({ navigation }: any) {
                       placeholder="R$ 9999"
                     />
                   </View>
+                </View>
+
+                <Text style={styles.filterSectionTitle}>ORIGEM</Text>
+                <View style={styles.chipRow}>
+                  {['todos', 'proprio', 'parceiro'].map((o) => (
+                    <Pressable
+                      key={o}
+                      style={[styles.chip, filters.origem === o && styles.chipActive]}
+                      onPress={() => updateFilters({ origem: o })}
+                    >
+                      <Text style={[styles.chipText, filters.origem === o && styles.chipTextActive]}>
+                        {o === 'todos' ? 'TODOS' : o === 'proprio' ? 'PRÓPRIO' : 'PARCEIRO'}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+
+                <Text style={styles.filterSectionTitle}>ORDENAR POR</Text>
+                <View style={styles.chipRow}>
+                  <Pressable
+                    style={[styles.chip, filters.orderByField === 'createdAt' && styles.chipActive]}
+                    onPress={() => updateFilters({ orderByField: 'createdAt', orderDirection: 'desc' })}
+                  >
+                    <Text style={[styles.chipText, filters.orderByField === 'createdAt' && styles.chipTextActive]}>RECENTES</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.chip, filters.orderByField === 'precoNumber' && filters.orderDirection === 'asc' && styles.chipActive]}
+                    onPress={() => updateFilters({ orderByField: 'precoNumber', orderDirection: 'asc' })}
+                  >
+                    <Text style={[styles.chipText, filters.orderByField === 'precoNumber' && filters.orderDirection === 'asc' && styles.chipTextActive]}>MENOR PREÇO</Text>
+                  </Pressable>
                 </View>
 
                 <View style={styles.switchRow}>
@@ -217,6 +257,21 @@ const styles = StyleSheet.create({
     position: 'relative',
     marginTop: spacing.sm
   },
+  errorBanner: {
+    backgroundColor: colors.danger,
+    padding: spacing.sm,
+    borderRadius: 8,
+    marginTop: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs
+  },
+  errorText: {
+    ...typography.caption,
+    color: colors.white,
+    fontSize: 10,
+    fontWeight: '800'
+  },
   searchIcon: {
     position: 'absolute',
     left: spacing.md,
@@ -233,6 +288,40 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.border
+  },
+  filterSectionTitle: {
+    ...typography.caption,
+    fontSize: 9,
+    fontWeight: '900',
+    color: colors.textCaption,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+    letterSpacing: 1
+  },
+  chipRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.sm
+  },
+  chip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border
+  },
+  chipActive: {
+    backgroundColor: 'rgba(249, 115, 22, 0.1)',
+    borderColor: colors.primary
+  },
+  chipText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.textSecondary
+  },
+  chipTextActive: {
+    color: colors.primary
   },
   filterRow: {
     flexDirection: 'row',
