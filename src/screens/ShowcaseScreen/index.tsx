@@ -507,8 +507,4 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontWeight: '800'
   }
-});..typography.body,
-    color: colors.textSecondary,
-    fontWeight: '800'
-  }
 });
