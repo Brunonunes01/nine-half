@@ -1,6 +1,9 @@
-import React, { useEffect } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
+import { Image, StyleSheet, Text, View, Pressable, ScrollView, Share, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import ScreenContainer from '../../components/layout/ScreenContainer';
 import Header from '../../components/layout/Header';
 import Loading from '../../components/ui/Loading';
@@ -8,231 +11,505 @@ import EmptyState from '../../components/ui/EmptyState';
 import Badge from '../../components/ui/Badge';
 import { getPaymentMethodLabel } from '../../constants/paymentMethods';
 import { useTransactions } from '../../hooks/useTransactions';
+import { getUserById } from '../../services/userService';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { shadows } from '../../theme/shadows';
 import { formatCurrencyBRL, formatSizeBR } from '../../utils/formatters';
 
-export default function TransactionDetailsScreen({ route }: any) {
+export default function TransactionDetailsScreen({ route, navigation }: any) {
   const transactionId = route.params?.transactionId;
   const { selectedTransaction, loadTransactionById, loading, error } = useTransactions();
+  const [buyer, setBuyer] = useState<any>(null);
+  const [seller, setSeller] = useState<any>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   useEffect(() => {
     if (!transactionId) return;
     loadTransactionById(transactionId);
   }, [transactionId, loadTransactionById]);
 
+  useEffect(() => {
+    if (selectedTransaction) {
+      getUserById(selectedTransaction.buyerId).then(setBuyer);
+      getUserById(selectedTransaction.sellerId).then(setSeller);
+    }
+  }, [selectedTransaction]);
+
   if (loading && !selectedTransaction) return <Loading text="GERANDO COMPROVANTE..." />;
 
   if (!selectedTransaction) {
     return (
       <ScreenContainer backgroundColor={colors.background}>
-        <Header title="Comprovante" showBack />
-        <EmptyState title="Nao encontrado" description={error || 'Nao foi possivel recuperar esta transacao.'} />
+        <Header title="COMPROVANTE" showBack />
+        <EmptyState title="NÃO ENCONTRADO" description={error || 'Não foi possível recuperar esta transação.'} />
       </ScreenContainer>
     );
   }
 
   const date = selectedTransaction?.completedAt?.seconds
-    ? new Date(selectedTransaction.completedAt.seconds * 1000).toLocaleString('pt-BR')
+    ? new Date(selectedTransaction.completedAt.seconds * 1000).toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
     : '-';
 
+  async function handleShare() {
+    if (!selectedTransaction) return;
+    
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    const message = `🚀 *COMPROVANTE NINE HALF*\n` +
+      `--------------------------------\n` +
+      `*ID:* #${selectedTransaction.id.slice(0, 8).toUpperCase()}\n` +
+      `*DATA:* ${date}\n\n` +
+      `*PRODUTO:* ${selectedTransaction.productBrand?.toUpperCase()} ${selectedTransaction.productModel}\n` +
+      `*TAMANHO:* ${formatSizeBR(selectedTransaction.productSize)}\n` +
+      `*VALOR:* ${formatCurrencyBRL(selectedTransaction.valor)}\n` +
+      `*MÉTODO:* ${getPaymentMethodLabel(selectedTransaction.paymentMethod).toUpperCase()}\n` +
+      `--------------------------------\n` +
+      `*VENDEDOR:* ${seller?.nome || '...'}\n` +
+      `*COMPRADOR:* ${buyer?.nome || '...'}\n` +
+      `--------------------------------\n` +
+      `🛡️ _Autenticado pela Rede Nine Half_`;
+
+    try {
+      await Share.share({
+        message,
+        title: 'Comprovante de Venda - Nine Half',
+      });
+    } catch (err) {
+      // Erro silencioso
+    }
+  }
+
+  async function handleGeneratePDF() {
+    if (!selectedTransaction) return;
+    setPdfLoading(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+
+    const html = `
+      <html>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
+          <style>
+            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #000; }
+            .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #000; padding-bottom: 20px; }
+            .logo { font-size: 32px; font-weight: 900; letter-spacing: 4px; margin: 0; }
+            .subtitle { font-size: 10px; letter-spacing: 5px; color: #666; margin-top: 5px; }
+            .status { background: #10B981; color: #fff; display: inline-block; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: 900; margin-top: 20px; }
+            .section { margin-bottom: 30px; }
+            .section-title { font-size: 10px; font-weight: 900; color: #999; border-bottom: 1px dashed #ddd; padding-bottom: 5px; margin-bottom: 15px; letter-spacing: 1px; }
+            .info-grid { display: flex; flex-wrap: wrap; }
+            .info-item { width: 50%; margin-bottom: 15px; }
+            .label { font-size: 10px; color: #666; font-weight: 800; margin-bottom: 3px; }
+            .value { font-size: 14px; font-weight: 900; }
+            .product-box { display: flex; align-items: center; background: #f9f9f9; padding: 15px; border-radius: 8px; }
+            .product-details { flex: 1; }
+            .brand { font-size: 10px; color: #666; font-weight: 900; }
+            .model { font-size: 18px; font-weight: 900; margin: 3px 0; }
+            .total-box { text-align: center; margin-top: 40px; padding: 30px; border: 2px solid #000; }
+            .total-label { font-size: 12px; font-weight: 900; color: #666; }
+            .total-value { font-size: 42px; font-weight: 900; margin-top: 5px; }
+            .footer { text-align: center; margin-top: 50px; font-size: 9px; color: #999; font-weight: 800; letter-spacing: 1px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1 class="logo">NINE HALF</h1>
+            <p class="subtitle">OFFICIAL RECEIPT</p>
+            <div class="status">PAGAMENTO CONFIRMADO</div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">DETALHES DA TRANSAÇÃO</div>
+            <div class="info-grid">
+              <div class="info-item">
+                <div class="label">ID TRANSAÇÃO</div>
+                <div class="value">#${selectedTransaction.id.toUpperCase()}</div>
+              </div>
+              <div class="info-item">
+                <div class="label">DATA</div>
+                <div class="value">${date}</div>
+              </div>
+              <div class="info-item">
+                <div class="label">MÉTODO DE PAGAMENTO</div>
+                <div class="value">${getPaymentMethodLabel(selectedTransaction.paymentMethod).toUpperCase()}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">PRODUTO</div>
+            <div class="product-box">
+              <div class="product-details">
+                <div class="brand">${selectedTransaction.productBrand?.toUpperCase()}</div>
+                <div class="model">${selectedTransaction.productModel}</div>
+                <div class="value">TAMANHO: ${formatSizeBR(selectedTransaction.productSize)}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">PARTES ENVOLVIDAS</div>
+            <div class="info-grid">
+              <div class="info-item">
+                <div class="label">VENDEDOR</div>
+                <div class="value">${seller?.nome || '...'}</div>
+              </div>
+              <div class="info-item">
+                <div class="label">COMPRADOR</div>
+                <div class="value">${buyer?.nome || '...'}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="total-box">
+            <div class="total-label">VALOR TOTAL</div>
+            <div class="total-value">${formatCurrencyBRL(selectedTransaction.valor)}</div>
+          </div>
+
+          <div class="footer">
+            AUTENTICADO PELA REDE NINE HALF • COMPROVANTE DIGITAL VÁLIDO
+          </div>
+        </body>
+      </html>
+    `;
+
+    try {
+      const { uri } = await Print.printToFileAsync({ html });
+      await Sharing.shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
+    } catch (err) {
+      Alert.alert('Erro', 'Não foi possível gerar o PDF.');
+    } finally {
+      setPdfLoading(false);
+    }
+  }
+
   return (
-    <ScreenContainer scroll backgroundColor={colors.background}>
-      <Header title="Comprovante" showBack subtitle="Prova digital da negociacao concluida." />
+    <ScreenContainer scroll={false} backgroundColor={colors.background}>
+      <Header 
+        title="COMPROVANTE" 
+        showBack 
+        subtitle="Prova digital da negociação"
+      />
 
-      <View style={styles.receipt}>
-        <View style={styles.receiptHeader}>
-          <View style={styles.iconBox}>
-            <Ionicons name="checkmark-seal" size={44} color={colors.black} />
-          </View>
-          <Text style={styles.statusTitle}>VENDA CONCLUIDA</Text>
-          <Text style={styles.receiptDate}>{date}</Text>
-        </View>
-
-        <View style={styles.divider} />
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>ITEM TRANSACIONADO</Text>
-          <View style={styles.productCard}>
-            {selectedTransaction.productImageUrl ? (
-              <Image source={{ uri: selectedTransaction.productImageUrl }} style={styles.productImage} resizeMode="cover" />
-            ) : (
-              <View style={styles.placeholderImage}>
-                <Ionicons name="image-outline" size={24} color={colors.textCaption} />
-              </View>
-            )}
-            <View style={styles.productInfo}>
-              <Text style={styles.brand}>{selectedTransaction.productBrand?.toUpperCase() || 'SNEAKER'}</Text>
-              <Text style={styles.model}>{selectedTransaction.productModel || 'Item sem nome'}</Text>
-              <Badge label="vendido" />
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.receiptCard}>
+          <View style={styles.receiptTop}>
+            <View style={styles.hypeLogo}>
+              <Text style={styles.hypeLogoText}>NINE HALF</Text>
+              <Text style={styles.hypeLogoSub}>OFFICIAL RECEIPT</Text>
+            </View>
+            <View style={styles.statusBadgeBox}>
+              <Ionicons name="checkmark-circle" size={20} color={colors.success} />
+              <Text style={styles.statusText}>PAGAMENTO CONFIRMADO</Text>
             </View>
           </View>
-        </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>DETALHES DA OPERACAO</Text>
-          <View style={styles.detailsList}>
-            <DetailRow label="ID TRANSACAO" value={`#${selectedTransaction.id.toUpperCase()}`} />
-            <DetailRow label="COMPRADOR" value={`ID: ${selectedTransaction.buyerId.slice(0, 12)}...`} />
-            <DetailRow label="VENDEDOR" value={`ID: ${selectedTransaction.sellerId.slice(0, 12)}...`} />
-            <DetailRow label="TAMANHO" value={formatSizeBR(selectedTransaction.productSize)} />
-            <DetailRow label="COR" value={selectedTransaction.productColor || '-'} />
-            <DetailRow label="LOCAL" value={selectedTransaction.productLocation || '-'} />
-            <DetailRow label="PAGAMENTO" value={getPaymentMethodLabel(selectedTransaction.paymentMethod)} />
+          <View style={styles.dashedDivider} />
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>PRODUTO</Text>
+            <View style={styles.productInfo}>
+              <View style={styles.imageBox}>
+                {selectedTransaction.productImageUrl ? (
+                  <Image source={{ uri: selectedTransaction.productImageUrl }} style={styles.productImage} />
+                ) : (
+                  <Ionicons name="image-outline" size={24} color={colors.textCaption} />
+                )}
+              </View>
+              <View style={styles.productText}>
+                <Text style={styles.brandText}>{selectedTransaction.productBrand?.toUpperCase()}</Text>
+                <Text style={styles.modelText}>{selectedTransaction.productModel}</Text>
+                <View style={styles.sizeRow}>
+                  <Text style={styles.sizeText}>TAMANHO: {formatSizeBR(selectedTransaction.productSize)}</Text>
+                  <Text style={styles.colorText}>{selectedTransaction.productColor}</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>PARTES ENVOLVIDAS</Text>
+            <View style={styles.partiesRow}>
+              <View style={styles.party}>
+                <Text style={styles.partyLabel}>VENDEDOR</Text>
+                <Text style={styles.partyValue}>{seller?.nome || '...'}</Text>
+              </View>
+              <View style={styles.partyArrow}>
+                <Ionicons name="arrow-forward" size={16} color={colors.textCaption} />
+              </View>
+              <View style={styles.party}>
+                <Text style={[styles.partyLabel, { textAlign: 'right' }]}>COMPRADOR</Text>
+                <Text style={[styles.partyValue, { textAlign: 'right' }]}>{buyer?.nome || '...'}</Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>INFORMAÇÕES DA TRANSAÇÃO</Text>
+            <View style={styles.infoGrid}>
+              <View style={styles.infoItem}>
+                <Text style={styles.infoLabel}>DATA</Text>
+                <Text style={styles.infoValue}>{date}</Text>
+              </View>
+              <View style={styles.infoItem}>
+                <Text style={styles.infoLabel}>MÉTODO</Text>
+                <Text style={styles.infoValue}>{getPaymentMethodLabel(selectedTransaction.paymentMethod).toUpperCase()}</Text>
+              </View>
+              <View style={styles.infoItem}>
+                <Text style={styles.infoLabel}>Nº TRANSAÇÃO</Text>
+                <Text style={styles.infoValue}>#{selectedTransaction.id.slice(0, 8).toUpperCase()}</Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.dashedDivider} />
+
+          <View style={styles.priceSection}>
+            <Text style={styles.priceLabel}>VALOR TOTAL</Text>
+            <Text style={styles.priceValue}>{formatCurrencyBRL(selectedTransaction.valor)}</Text>
+          </View>
+
+          <View style={styles.footerBranding}>
+            <Ionicons name="shield-checkmark" size={14} color={colors.textCaption} />
+            <Text style={styles.footerBrandingText}>AUTENTICADO PELA REDE NINE HALF</Text>
           </View>
         </View>
 
-        <View style={styles.divider} />
+        <Pressable 
+          style={styles.shareButton}
+          onPress={handleShare}
+        >
+          <Ionicons name="share-social-outline" size={20} color={colors.black} />
+          <Text style={styles.shareButtonText}>COMPARTILHAR TEXTO</Text>
+        </Pressable>
 
-        <View style={styles.totalContainer}>
-          <Text style={styles.totalLabel}>VALOR FINAL</Text>
-          <Text style={styles.totalValue}>{formatCurrencyBRL(selectedTransaction.valor)}</Text>
-        </View>
-      </View>
+        <Pressable 
+          style={[styles.shareButton, { backgroundColor: colors.white, marginTop: spacing.sm }]}
+          onPress={handleGeneratePDF}
+          disabled={pdfLoading}
+        >
+          <Ionicons name="document-text-outline" size={20} color={colors.black} />
+          <Text style={styles.shareButtonText}>{pdfLoading ? 'GERANDO PDF...' : 'COMPARTILHAR PDF'}</Text>
+        </Pressable>
+      </ScrollView>
     </ScreenContainer>
   );
 }
 
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.detailItem}>
-      <Text style={styles.detailLabel}>{label}</Text>
-      <Text style={styles.detailValue} numberOfLines={1}>
-        {value}
-      </Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  receipt: {
-    paddingTop: spacing.lg,
+  scrollContent: {
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
     paddingBottom: spacing.xxl
   },
-  receiptHeader: {
-    alignItems: 'center',
-    marginBottom: spacing.xl
+  receiptCard: {
+    backgroundColor: colors.white,
+    borderRadius: 4,
+    padding: spacing.xl,
+    ...shadows.heavy,
+    position: 'relative'
   },
-  iconBox: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.primary,
+  receiptTop: {
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.md,
-    ...shadows.medium
+    marginBottom: spacing.lg
   },
-  statusTitle: {
-    ...typography.h2,
+  hypeLogo: {
+    alignItems: 'center',
+    marginBottom: spacing.md
+  },
+  hypeLogoText: {
+    fontSize: 24,
     fontWeight: '900',
-    letterSpacing: -0.5,
-    color: colors.white
+    color: colors.black,
+    letterSpacing: 2
   },
-  receiptDate: {
-    ...typography.body,
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginTop: 4
+  hypeLogoSub: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.textCaption,
+    letterSpacing: 4,
+    marginTop: 2
   },
-  divider: {
+  statusBadgeBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.success
+  },
+  statusText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: colors.success,
+    letterSpacing: 0.5
+  },
+  dashedDivider: {
     height: 1,
-    backgroundColor: colors.border,
-    marginVertical: spacing.xl
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    borderStyle: 'dashed',
+    marginVertical: spacing.lg
   },
   section: {
-    marginBottom: spacing.xl
+    marginBottom: spacing.lg
   },
   sectionTitle: {
-    ...typography.caption,
     fontSize: 10,
     fontWeight: '900',
     color: colors.textCaption,
-    marginBottom: spacing.md,
-    letterSpacing: 1.5
+    marginBottom: spacing.sm,
+    letterSpacing: 1
   },
-  productCard: {
+  productInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    padding: spacing.md,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border
+    gap: spacing.md
   },
-  productImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    backgroundColor: colors.backgroundSecondary
-  },
-  placeholderImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    backgroundColor: colors.backgroundSecondary,
+  imageBox: {
+    width: 60,
+    height: 60,
+    borderRadius: 4,
+    backgroundColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: colors.border
+    borderColor: '#E5E5E5'
   },
-  productInfo: {
-    flex: 1,
-    marginLeft: spacing.md,
-    gap: 4
+  productImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 4
   },
-  brand: {
-    ...typography.caption,
+  productText: {
+    flex: 1
+  },
+  brandText: {
     fontSize: 10,
     fontWeight: '900',
+    color: colors.textCaption,
+    letterSpacing: 0.5
+  },
+  modelText: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: colors.black,
+    marginVertical: 2
+  },
+  sizeRow: {
+    flexDirection: 'row',
+    gap: spacing.md
+  },
+  sizeText: {
+    fontSize: 11,
+    fontWeight: '800',
     color: colors.textSecondary
   },
-  model: {
-    ...typography.body,
-    fontWeight: '900',
-    color: colors.white
+  colorText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.textCaption
   },
-  detailsList: {
+  partiesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F9FAFB',
+    padding: spacing.md,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#F3F4F6'
+  },
+  party: {
+    flex: 1
+  },
+  partyLabel: {
+    fontSize: 8,
+    fontWeight: '900',
+    color: colors.textCaption,
+    marginBottom: 4,
+    letterSpacing: 0.5
+  },
+  partyValue: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.black
+  },
+  partyArrow: {
+    paddingHorizontal: spacing.sm
+  },
+  infoGrid: {
     gap: spacing.sm
   },
-  detailItem: {
+  infoItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center'
   },
-  detailLabel: {
-    ...typography.caption,
+  infoLabel: {
     fontSize: 10,
     fontWeight: '800',
-    color: colors.textSecondary
+    color: colors.textCaption
   },
-  detailValue: {
-    ...typography.body,
-    fontSize: 12,
+  infoValue: {
+    fontSize: 11,
     fontWeight: '700',
-    color: colors.white
+    color: colors.black
   },
-  totalContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  priceSection: {
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    padding: spacing.lg,
+    marginVertical: spacing.sm
+  },
+  priceLabel: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: colors.textCaption,
+    letterSpacing: 1
+  },
+  priceValue: {
+    fontSize: 36,
+    fontWeight: '900',
+    color: colors.black,
+    marginTop: 4
+  },
+  footerBranding: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: spacing.xl
+  },
+  footerBrandingText: {
+    fontSize: 8,
+    fontWeight: '900',
+    color: colors.textCaption,
+    letterSpacing: 1
+  },
+  shareButton: {
+    backgroundColor: colors.primary,
+    height: 56,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border
+    marginTop: spacing.xl,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    ...shadows.medium
   },
-  totalLabel: {
-    ...typography.body,
+  shareButtonText: {
+    fontSize: 14,
     fontWeight: '900',
-    color: colors.textSecondary
-  },
-  totalValue: {
-    ...typography.h2,
-    fontSize: 32,
-    fontWeight: '900',
-    color: colors.primary
+    color: colors.black,
+    letterSpacing: 0.5
   }
 });
