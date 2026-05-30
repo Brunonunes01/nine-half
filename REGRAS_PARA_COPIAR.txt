@@ -1,0 +1,65 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helpers base
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // --- REGRAS ---
+
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isOwner(userId) && request.resource.data.tipo == resource.data.tipo;
+      allow delete: if false;
+    }
+
+    match /showcases/{showcaseId} {
+      allow get, list: if isSignedIn() && (resource.data.userId == request.auth.uid || resource.data.visivel == true);
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    match /products/{productId} {
+      allow get, list: if isSignedIn() && (
+        resource.data.ownerId == request.auth.uid || 
+        resource.data.reservedBy == request.auth.uid || 
+        (resource.data.status == 'disponivel' && resource.data.showcaseVisible == true)
+      );
+
+      allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
+
+      allow update: if isSignedIn() && (
+        // O dono pode editar TUDO do seu próprio produto (Isso libera a sincronização)
+        (resource.data.ownerId == request.auth.uid) || 
+        // Fluxo de reserva por terceiros
+        (resource.data.status == 'disponivel' && request.resource.data.status == 'reservado') ||
+        // Fluxo de cancelamento/venda
+        (resource.data.status == 'reservado' && (request.auth.uid == resource.data.ownerId || request.auth.uid == resource.data.reservedBy))
+      );
+
+      allow delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+    }
+
+    match /reservations/{reservationId} {
+      allow read, update: if isSignedIn() && (resource.data.buyerId == request.auth.uid || resource.data.sellerId == request.auth.uid);
+      allow create: if isSignedIn() && request.resource.data.buyerId == request.auth.uid;
+      allow delete: if false;
+    }
+
+    match /transactions/{transactionId} {
+      allow read: if isSignedIn() && (resource.data.buyerId == request.auth.uid || resource.data.sellerId == request.auth.uid);
+      allow create: if isSignedIn() && (request.resource.data.buyerId == request.auth.uid || request.resource.data.sellerId == request.auth.uid);
+      allow update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
