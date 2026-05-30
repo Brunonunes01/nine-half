@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, FlatList, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, FlatList, Pressable, StyleSheet, Switch, Text, View, Modal } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -29,7 +29,7 @@ export default function ShowcaseScreen({ navigation }: any) {
 
   const [newShowcaseName, setNewShowcaseName] = React.useState('Minha Vitrine');
   const [editingName, setEditingName] = React.useState('');
-  const [showSettings, setShowSettings] = React.useState(false);
+  const [showSettingsModal, setShowSettingsModal] = React.useState(false);
   const [search, setSearch] = React.useState('');
   const [productTab, setProductTab] = React.useState<'active' | 'sold'>('active');
 
@@ -95,7 +95,7 @@ export default function ShowcaseScreen({ navigation }: any) {
     if (!showcaseApi.showcase?.id) return;
     if (!isProfileComplete) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Perfil incompleto', 'Preencha CPF, endereco e WhatsApp no perfil para ativar vitrine publica.');
+      Alert.alert('Perfil incompleto', 'Preencha CPF, endereço e WhatsApp no perfil para ativar vitrine pública.');
       return;
     }
     try {
@@ -109,14 +109,14 @@ export default function ShowcaseScreen({ navigation }: any) {
     try {
       await showcaseApi.updateShowcase(showcaseApi.showcase.id, { nome: editingName.trim() || 'Minha Vitrine' });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setShowSettings(false);
+      setShowSettingsModal(false);
     } catch (_) {}
   }
 
   if (!showcaseApi.showcase && !showcaseApi.loading) {
     return (
       <ScreenContainer scroll backgroundColor={colors.background}>
-        <Header title="Minha Vitrine" showBack subtitle="Anuncie seus pares para a comunidade." />
+        <Header title="Criar Loja" showBack subtitle="Configure sua vitrine para a comunidade." />
         <View style={styles.createForm}>
           <Input
             label="NOME DA VITRINE"
@@ -124,7 +124,7 @@ export default function ShowcaseScreen({ navigation }: any) {
             onChangeText={setNewShowcaseName}
             placeholder="Ex: Hype Store"
           />
-          <Button title="CRIAR MINHA VITRINE" onPress={handleCreateShowcase} loading={showcaseApi.loading} />
+          <Button title="CRIAR VITRINE" onPress={handleCreateShowcase} loading={showcaseApi.loading} />
         </View>
       </ScreenContainer>
     );
@@ -134,17 +134,18 @@ export default function ShowcaseScreen({ navigation }: any) {
     <ScreenContainer withPadding={false} backgroundColor={colors.background}>
       <View style={styles.headerPadding}>
         <Header
-          title="Minha Vitrine"
+          title={showcaseApi.showcase?.nome?.toUpperCase() || 'MINHA VITRINE'}
+          subtitle="Gerenciar Estoque"
           showBack
           rightAction={
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setShowSettings(!showSettings);
+                setShowSettingsModal(true);
               }}
               style={styles.iconBtn}
             >
-              <Ionicons name={showSettings ? 'close' : 'settings-outline'} size={24} color={colors.white} />
+              <Ionicons name="settings-outline" size={24} color={colors.white} />
             </Pressable>
           }
         />
@@ -156,71 +157,60 @@ export default function ShowcaseScreen({ navigation }: any) {
         numColumns={2}
         columnWrapperStyle={styles.columnWrapper}
         contentContainerStyle={styles.listContent}
-        stickyHeaderIndices={[0]}
+        stickyHeaderIndices={[1]}
         ListHeaderComponent={
-          <View style={styles.stickyHeader}>
-            <View style={styles.searchContainer}>
-              <Ionicons name="search" size={20} color={colors.textCaption} style={styles.searchIcon} />
-              <Input value={search} onChangeText={setSearch} placeholder="Buscar em meu estoque..." style={styles.searchInput} />
+          <>
+            <View style={styles.profileHeader}>
+              <View style={styles.storeAvatar}>
+                <Ionicons name="storefront" size={32} color={colors.primary} />
+              </View>
+              <View style={styles.storeInfo}>
+                <Text style={styles.storeName}>{showcaseApi.showcase?.nome}</Text>
+                <View style={styles.statusBadge}>
+                  <View style={[styles.statusDot, { backgroundColor: showcaseApi.showcase?.visivel ? colors.success : colors.textCaption }]} />
+                  <Text style={styles.statusText}>
+                    {showcaseApi.showcase?.visivel ? 'VITRINE PÚBLICA' : 'VITRINE PRIVADA'}
+                  </Text>
+                </View>
+              </View>
             </View>
 
-            {showSettings ? (
-              <View style={styles.settingsPanel}>
-                <Input label="NOME DA VITRINE" value={editingName} onChangeText={setEditingName} />
-                <View style={styles.switchRow}>
-                  <View style={styles.switchText}>
-                    <Text style={styles.switchTitle}>Vitrine Publica</Text>
-                    <Text style={styles.switchSubtitle}>Visivel no Estoque Global</Text>
-                  </View>
-                  <Switch
-                    value={!!showcaseApi.showcase?.visivel}
-                    onValueChange={handleToggleVisibility}
-                    trackColor={{ true: colors.primary, false: colors.border }}
-                    thumbColor={colors.white}
-                  />
-                </View>
-                <Button title="SALVAR CONFIGURACOES" onPress={handleSaveSettings} style={styles.saveBtn} />
+            <View style={styles.statsRow}>
+              <View style={styles.stat}>
+                <Text style={styles.statValue}>{productsApi.products.length}</Text>
+                <Text style={styles.statLabel}>TOTAL</Text>
               </View>
-            ) : (
-              <>
-                <View style={styles.statsRow}>
-                  <View style={styles.stat}>
-                    <Text style={styles.statValue}>{productsApi.products.length}</Text>
-                    <Text style={styles.statLabel}>TOTAL</Text>
-                  </View>
-                  <View style={styles.statDivider} />
-                  <View style={styles.stat}>
-                    <Text style={styles.statValue}>{activeProducts.length}</Text>
-                    <Text style={styles.statLabel}>ATIVOS</Text>
-                  </View>
-                  <View style={styles.statDivider} />
-                  <View style={styles.stat}>
-                    <Text style={[styles.statValue, { color: colors.warning }]}>{soldProducts.length}</Text>
-                    <Text style={styles.statLabel}>VENDIDOS</Text>
-                  </View>
-                </View>
-
-                <View style={styles.tabRow}>
-                  <Pressable
-                    style={[styles.tabBtn, productTab === 'active' && styles.tabBtnActive]}
-                    onPress={() => setProductTab('active')}
-                  >
-                    <Text style={[styles.tabText, productTab === 'active' && styles.tabTextActive]}>
-                      Ativos ({activeProducts.length})
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    style={[styles.tabBtn, productTab === 'sold' && styles.tabBtnActive]}
-                    onPress={() => setProductTab('sold')}
-                  >
-                    <Text style={[styles.tabText, productTab === 'sold' && styles.tabTextActive]}>
-                      Vendidos ({soldProducts.length})
-                    </Text>
-                  </Pressable>
-                </View>
-              </>
-            )}
-          </View>
+              <View style={styles.statDivider} />
+              <View style={styles.stat}>
+                <Text style={styles.statValue}>{activeProducts.length}</Text>
+                <Text style={styles.statLabel}>ATIVOS</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.stat}>
+                <Text style={[styles.statValue, { color: colors.warning }]}>{soldProducts.length}</Text>   
+                <Text style={styles.statLabel}>VENDIDOS</Text>
+              </View>
+            </View>
+            
+            <View style={styles.tabRow}>
+              <Pressable
+                style={[styles.tabBtn, productTab === 'active' && styles.tabBtnActive]}
+                onPress={() => setProductTab('active')}
+              >
+                <Text style={[styles.tabText, productTab === 'active' && styles.tabTextActive]}>
+                  Estoque ({activeProducts.length})
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[styles.tabBtn, productTab === 'sold' && styles.tabBtnActive]}
+                onPress={() => setProductTab('sold')}
+              >
+                <Text style={[styles.tabText, productTab === 'sold' && styles.tabTextActive]}>
+                  Vendidos ({soldProducts.length})
+                </Text>
+              </Pressable>
+            </View>
+          </>
         }
         renderItem={({ item }) => {
           if (showcaseApi.loading) {
@@ -241,13 +231,13 @@ export default function ShowcaseScreen({ navigation }: any) {
         }}
         ListEmptyComponent={
           <EmptyState
-            title={productTab === 'sold' ? 'Nenhum produto vendido' : 'Sua vitrine esta vazia'}
+            title={productTab === 'sold' ? 'NENHUM PRODUTO VENDIDO' : 'SUA VITRINE ESTÁ VAZIA'}
             description={
               productTab === 'sold'
-                ? 'Os produtos vendidos aparecerao aqui separados para voce.'
+                ? 'Os produtos vendidos aparecerão aqui.'
                 : 'Comece adicionando seu primeiro sneaker ao estoque.'
             }
-            actionLabel={productTab === 'sold' ? 'VER ATIVOS' : 'ADICIONAR PRODUTO'}
+            actionLabel={productTab === 'sold' ? 'VER ESTOQUE ATIVO' : 'ADICIONAR PRODUTO'}
             onAction={() => {
               if (productTab === 'sold') {
                 setProductTab('active');
@@ -263,11 +253,46 @@ export default function ShowcaseScreen({ navigation }: any) {
         style={styles.fab}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          navigation.navigate(ROUTES.PRODUCT_FORM, { mode: 'create', showcaseId: showcaseApi.showcase?.id });
+          navigation.navigate(ROUTES.PRODUCT_FORM, { mode: 'create', showcaseId: showcaseApi.showcase?.id });  
         }}
       >
         <Ionicons name="add" size={32} color={colors.black} />
       </Pressable>
+
+      <Modal
+        visible={showSettingsModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowSettingsModal(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Configurações da Loja</Text>
+            <View style={styles.modalContent}>
+              <Input label="NOME DA VITRINE" value={editingName} onChangeText={setEditingName} />
+              
+              <View style={styles.switchRow}>
+                <View style={styles.switchText}>
+                  <Text style={styles.switchTitle}>Vitrine Pública</Text>
+                  <Text style={styles.switchSubtitle}>Ficar visível no Estoque Global</Text>
+                </View>
+                <Switch
+                  value={!!showcaseApi.showcase?.visivel}
+                  onValueChange={handleToggleVisibility}
+                  trackColor={{ true: colors.primary, false: colors.border }}
+                  thumbColor={colors.white}
+                />
+              </View>
+              
+              <Button title="SALVAR" onPress={handleSaveSettings} style={styles.saveBtn} />
+              <Pressable style={styles.cancelBtn} onPress={() => setShowSettingsModal(false)}>
+                <Text style={styles.cancelBtnText}>CANCELAR</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </ScreenContainer>
   );
 }
@@ -277,7 +302,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md
   },
   createForm: {
-    marginTop: spacing.xl
+    marginTop: spacing.xl,
+    paddingHorizontal: spacing.md
   },
   iconBtn: {
     width: 44,
@@ -285,33 +311,63 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'center'
   },
-  stickyHeader: {
-    backgroundColor: colors.background,
+  profileHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border
+    marginTop: spacing.md,
+    marginBottom: spacing.lg
   },
-  searchContainer: {
-    position: 'relative',
-    marginTop: spacing.sm
+  storeAvatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 16,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md
   },
-  searchIcon: {
-    position: 'absolute',
-    left: spacing.md,
-    top: 18,
-    zIndex: 1
+  storeInfo: {
+    flex: 1,
   },
-  searchInput: {
-    marginBottom: 0
+  storeName: {
+    ...typography.h2,
+    fontWeight: '900',
+    color: colors.white,
+    marginBottom: 4
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: colors.border
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 6
+  },
+  statusText: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: colors.textSecondary,
+    letterSpacing: 0.5
   },
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.lg,
     backgroundColor: colors.surface,
-    borderRadius: 8,
-    marginTop: spacing.md,
+    marginHorizontal: spacing.md,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border
   },
@@ -321,7 +377,7 @@ const styles = StyleSheet.create({
   },
   statValue: {
     ...typography.h3,
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: '900',
     color: colors.white
   },
@@ -339,21 +395,26 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border
   },
   tabRow: {
-    marginTop: spacing.md,
+    marginTop: spacing.lg,
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.md,
     flexDirection: 'row',
-    gap: spacing.sm
+    gap: spacing.sm,
+    backgroundColor: colors.background,
+    paddingBottom: spacing.sm,
   },
   tabBtn: {
     flex: 1,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    borderRadius: 8,
     paddingVertical: spacing.sm,
     alignItems: 'center'
   },
   tabBtnActive: {
-    borderColor: colors.primary
+    borderColor: colors.primary,
+    backgroundColor: 'rgba(249, 115, 22, 0.1)',
   },
   tabText: {
     ...typography.caption,
@@ -362,36 +423,7 @@ const styles = StyleSheet.create({
     fontSize: 11
   },
   tabTextActive: {
-    color: colors.white
-  },
-  settingsPanel: {
-    marginTop: spacing.md,
-    padding: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border
-  },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.md
-  },
-  switchText: {
-    flex: 1
-  },
-  switchTitle: {
-    ...typography.body,
-    fontWeight: '800',
-    color: colors.white
-  },
-  switchSubtitle: {
-    ...typography.caption,
-    fontSize: 12
-  },
-  saveBtn: {
-    height: 48
+    color: colors.primary
   },
   listContent: {
     paddingBottom: 100
@@ -399,7 +431,7 @@ const styles = StyleSheet.create({
   columnWrapper: {
     justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
-    marginTop: spacing.md
+    marginBottom: spacing.md
   },
   cardWrapper: {
     width: '48%'
@@ -408,12 +440,71 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: spacing.xl,
     right: spacing.xl,
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     ...shadows.heavy
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    justifyContent: 'flex-end',
+  },
+  modalCard: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.xl,
+  },
+  modalTitle: {
+    ...typography.h3,
+    color: colors.white,
+    fontWeight: '900',
+    marginBottom: spacing.lg,
+  },
+  modalContent: {
+    gap: spacing.md,
+  },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.md,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: colors.border,
+    marginBottom: spacing.md
+  },
+  switchText: {
+    flex: 1
+  },
+  switchTitle: {
+    ...typography.body,
+    fontWeight: '900',
+    color: colors.white
+  },
+  switchSubtitle: {
+    ...typography.caption,
+    fontSize: 11,
+    marginTop: 2
+  },
+  saveBtn: {
+    height: 52
+  },
+  cancelBtn: {
+    height: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.xs
+  },
+  cancelBtnText: {
+    ...typography.body,
+    color: colors.textSecondary,
+    fontWeight: '800'
   }
 });
