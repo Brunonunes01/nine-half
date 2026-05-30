@@ -124,7 +124,7 @@ export async function getGlobalProducts({
 }) {
   const q = buildQuery({ filters, pageSize, lastVisible });
   const snapshot = await getDocs(q);
-  const hideMyProducts = filters?.hideMyProducts !== false;
+  const hideMyProducts = filters?.hideMyProducts === true;
   const docs = snapshot.docs
     .map((item) => ({ id: item.id, ...item.data() }))
     .filter((item: any) => !(hideMyProducts && userId && item.ownerId === userId)) as any[];

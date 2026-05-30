@@ -25,6 +25,7 @@ export default function GlobalStockScreen({ navigation }: any) {
     products,
     loading,
     refreshing,
+    error,
     filters,
     hasMore,
     loadInitialProducts,
@@ -81,6 +82,13 @@ export default function GlobalStockScreen({ navigation }: any) {
                 onSubmitEditing={() => loadInitialProducts()}
               />
             </View>
+
+            {error ? (
+              <View style={styles.errorBanner}>
+                <Ionicons name="alert-circle" size={16} color={colors.white} />
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            ) : null}
 
             {showFilters ? (
               <View style={styles.filtersPanel}>
@@ -225,6 +233,20 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     marginBottom: 0
+  },
+  errorBanner: {
+    backgroundColor: colors.danger,
+    padding: spacing.sm,
+    borderRadius: 8,
+    marginTop: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs
+  },
+  errorText: {
+    color: colors.white,
+    fontSize: 10,
+    fontWeight: '800'
   },
   filtersPanel: {
     marginTop: spacing.md,

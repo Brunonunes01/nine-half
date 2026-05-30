@@ -88,23 +88,23 @@ export default function DashboardScreen({ navigation }: any) {
 
   return (
     <ScreenContainer scroll backgroundColor={colors.background}>
-      <Header
-        title={`SALVE, ${firstName}`}
-        subtitle="Sua central de comando Nine Half"
-        rightAction={
-          <Pressable 
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              navigation.navigate(ROUTES.PROFILE);
-            }} 
-            style={styles.profileTrigger}
-          >
-            <View style={styles.avatarCircle}>
-              <Text style={styles.avatarText}>{firstName.charAt(0).toUpperCase()}</Text>
-            </View>
-          </Pressable>
-        }
-      />
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.brandLogo}>NINE HALF</Text>
+          <Text style={styles.brandTagline}>COMMAND CENTER</Text>
+        </View>
+        <Pressable 
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            navigation.navigate(ROUTES.PROFILE);
+          }} 
+          style={styles.profileButton}
+        >
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarText}>{firstName.charAt(0).toUpperCase()}</Text>
+          </View>
+        </Pressable>
+      </View>
 
       <View style={styles.statsPanel}>
         <View style={styles.statsHeader}>
@@ -179,13 +179,33 @@ export default function DashboardScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  profileTrigger: {
-    padding: 2,
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    marginTop: spacing.xs
+  },
+  brandLogo: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: colors.white,
+    letterSpacing: 1
+  },
+  brandTagline: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.primary,
+    letterSpacing: 2,
+    marginTop: -2
+  },
+  profileButton: {
+    padding: 2
   },
   avatarCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
@@ -195,7 +215,7 @@ const styles = StyleSheet.create({
   avatarText: {
     color: colors.primary,
     fontWeight: '900',
-    fontSize: 16
+    fontSize: 18
   },
   statsPanel: {
     backgroundColor: colors.surface,
