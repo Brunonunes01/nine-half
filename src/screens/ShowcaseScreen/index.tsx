@@ -41,12 +41,12 @@ export default function ShowcaseScreen({ navigation }: any) {
       const found: any = await showcaseApi.loadShowcase(user.uid);
       if (found?.id) {
         setEditingName(found.nome || '');
-        await productsApi.loadProductsByShowcase(found.id, user.uid);
+        await productsApi.loadMyProducts(user.uid);
       }
     } finally {
       loadingRef.current = false;
     }
-  }, [user?.uid, showcaseApi.loadShowcase, productsApi.loadProductsByShowcase]);
+  }, [user?.uid, showcaseApi.loadShowcase, productsApi.loadMyProducts]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -56,13 +56,17 @@ export default function ShowcaseScreen({ navigation }: any) {
 
   const isProfileComplete = !!(user?.documento && user?.endereco && user?.whatsapp);
 
+  const showcaseProducts = React.useMemo(
+    () => productsApi.products.filter((p: any) => p.ownerId === user?.uid),
+    [productsApi.products, user?.uid]
+  );
   const activeProducts = React.useMemo(
-    () => productsApi.products.filter((p: any) => p.status !== PRODUCT_STATUS.SOLD),
-    [productsApi.products]
+    () => showcaseProducts.filter((p: any) => p.status !== PRODUCT_STATUS.SOLD),
+    [showcaseProducts]
   );
   const soldProducts = React.useMemo(
-    () => productsApi.products.filter((p: any) => p.status === PRODUCT_STATUS.SOLD),
-    [productsApi.products]
+    () => showcaseProducts.filter((p: any) => p.status === PRODUCT_STATUS.SOLD),
+    [showcaseProducts]
   );
   const tabProducts = productTab === 'sold' ? soldProducts : activeProducts;
   const filteredProducts = React.useMemo(
@@ -85,7 +89,7 @@ export default function ShowcaseScreen({ navigation }: any) {
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setEditingName(created.nome || '');
-      await productsApi.loadProductsByShowcase(created.id, user.uid);
+      await productsApi.loadMyProducts(user.uid);
     } catch (_) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
@@ -152,12 +156,11 @@ export default function ShowcaseScreen({ navigation }: any) {
       </View>
 
       <FlatList
-        data={showcaseApi.loading ? [1, 2, 3, 4] : filteredProducts}
-        keyExtractor={(item, index) => (showcaseApi.loading ? `skeleton-${index}` : item.id)}
+        data={(showcaseApi.loading || productsApi.loading) ? [1, 2, 3, 4] : filteredProducts}
+        keyExtractor={(item, index) => (showcaseApi.loading || productsApi.loading ? `skeleton-${index}` : item.id)}
         numColumns={2}
         columnWrapperStyle={styles.columnWrapper}
         contentContainerStyle={styles.listContent}
-        stickyHeaderIndices={[1]}
         ListHeaderComponent={
           <>
             <View style={styles.profileHeader}>
@@ -177,19 +180,29 @@ export default function ShowcaseScreen({ navigation }: any) {
 
             <View style={styles.statsRow}>
               <View style={styles.stat}>
-                <Text style={styles.statValue}>{productsApi.products.length}</Text>
+                <Text style={styles.statValue}>{showcaseProducts.length}</Text>
                 <Text style={styles.statLabel}>TOTAL</Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.stat}>
                 <Text style={styles.statValue}>{activeProducts.length}</Text>
-                <Text style={styles.statLabel}>ATIVOS</Text>
+                <Text style={styles.statLabel}>ESTOQUE</Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.stat}>
                 <Text style={[styles.statValue, { color: colors.warning }]}>{soldProducts.length}</Text>   
                 <Text style={styles.statLabel}>VENDIDOS</Text>
               </View>
+            </View>
+
+            <View style={styles.searchContainer}>
+              <Ionicons name="search" size={20} color={colors.textCaption} style={styles.searchIcon} />
+              <Input
+                placeholder="Buscar no meu estoque..."
+                value={search}
+                onChangeText={setSearch}
+                style={styles.searchInput}
+              />
             </View>
             
             <View style={styles.tabRow}>
@@ -393,6 +406,20 @@ const styles = StyleSheet.create({
     width: 1,
     height: 30,
     backgroundColor: colors.border
+  },
+  searchContainer: {
+    paddingHorizontal: spacing.md,
+    marginTop: spacing.md,
+    position: 'relative'
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: spacing.lg + 4,
+    top: 18,
+    zIndex: 1
+  },
+  searchInput: {
+    marginBottom: 0
   },
   tabRow: {
     marginTop: spacing.lg,

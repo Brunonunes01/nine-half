@@ -31,7 +31,7 @@ export default function ProductFormScreen({ navigation, route }: any) {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const { createProduct, updateProduct, loadProductById, selectedProduct, loading } = useProducts();
+  const { createProduct, updateProduct, deleteProduct, loadProductById, selectedProduct, loading } = useProducts();
 
   const mode = route.params?.mode || 'create';
   const showcaseId = route.params?.showcaseId || '';
@@ -130,6 +130,31 @@ export default function ProductFormScreen({ navigation, route }: any) {
   function removeLocalImage(index: number) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setLocalImages((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  async function handleDelete() {
+    if (!productId) return;
+    
+    Alert.alert(
+      'Excluir Produto',
+      'Tem certeza que deseja remover este par do seu estoque? Esta ação não pode ser desfeita.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { 
+          text: 'EXCLUIR', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteProduct(productId);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              navigation.pop(2);
+            } catch (err: any) {
+              setFormError(err?.message || 'Erro ao excluir produto.');
+            }
+          }
+        }
+      ]
+    );
   }
 
   async function handleSubmit() {
@@ -282,6 +307,15 @@ export default function ProductFormScreen({ navigation, route }: any) {
       </ScreenContainer>
 
       <View style={[styles.fixedFooter, { paddingBottom: insets.bottom + spacing.md }]}>
+        {mode === 'edit' && (
+          <Button
+            title="EXCLUIR PRODUTO"
+            variant="danger"
+            onPress={handleDelete}
+            loading={loading}
+            style={{ marginBottom: spacing.sm }}
+          />
+        )}
         <Button 
           title={mode === 'edit' ? 'SALVAR ALTERAÇÕES' : 'CADASTRAR EM ESTOQUE'} 
           onPress={handleSubmit} 
