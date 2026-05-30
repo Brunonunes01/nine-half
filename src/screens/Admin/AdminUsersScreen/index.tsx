@@ -166,36 +166,46 @@ export default function AdminUsersScreen({ navigation }: any) {
             return (
               <View style={styles.userCard}>
                 <View style={styles.userTop}>
+                  <View style={styles.avatarCircle}>
+                    <Text style={styles.avatarText}>{item?.nome?.charAt(0).toUpperCase() || '?'}</Text>
+                  </View>
                   <View style={styles.userInfo}>
-                    <Text style={styles.userName}>{item?.nome || 'Sem nome'}</Text>
-                    <Text style={styles.userEmail}>{item?.email || '-'}</Text>
+                    <Text style={styles.userName} numberOfLines={1}>{item?.nome || 'Sem nome'}</Text>
+                    <Text style={styles.userEmail} numberOfLines={1}>{item?.email || '-'}</Text>
                   </View>
                   <RoleBadge tipo={item?.tipo} />
                 </View>
 
+                <View style={styles.divider} />
+
                 <View style={styles.statusRow}>
-                  <View style={[styles.statusDot, { backgroundColor: isActive ? colors.success : colors.danger }]} />
-                  <Text style={styles.statusText}>{isActive ? 'Ativo' : 'Bloqueado'}</Text>
+                  <View style={styles.statusInfo}>
+                    <View style={[styles.statusDot, { backgroundColor: isActive ? colors.success : colors.danger }]} />
+                    <Text style={[styles.statusText, { color: isActive ? colors.success : colors.danger }]}>
+                      {isActive ? 'CONTA ATIVA' : 'CONTA BLOQUEADA'}
+                    </Text>
+                  </View>
                   {!isActive && item?.blockedReason ? (
-                    <Text style={styles.reasonText}>• {item.blockedReason}</Text>
+                    <Text style={styles.reasonText} numberOfLines={1}>{item.blockedReason}</Text>
                   ) : null}
                 </View>
 
                 <View style={styles.actionsRow}>
-                  <Button
-                    title="ALTERAR TIPO"
-                    variant="secondary"
+                  <Pressable 
+                    style={[styles.actionBtnBase, styles.secondaryAction]}
                     onPress={() => setRoleModalUser(item)}
-                    fullWidth={false}
-                    style={styles.actionBtn}
-                  />
-                  <Button
-                    title={isActive ? 'BLOQUEAR' : 'DESBLOQUEAR'}
-                    variant={isActive ? 'danger' : 'secondary'}
+                  >
+                    <Ionicons name="shield-outline" size={16} color={colors.white} />
+                    <Text style={styles.actionBtnText}>TIPO</Text>
+                  </Pressable>
+                  
+                  <Pressable 
+                    style={[styles.actionBtnBase, isActive ? styles.dangerAction : styles.successAction]}
                     onPress={() => handleToggleActive(item)}
-                    fullWidth={false}
-                    style={styles.actionBtn}
-                  />
+                  >
+                    <Ionicons name={isActive ? "lock-closed-outline" : "lock-open-outline"} size={16} color={colors.white} />
+                    <Text style={styles.actionBtnText}>{isActive ? 'BLOQUEAR' : 'ATIVAR'}</Text>
+                  </Pressable>
                 </View>
               </View>
             );
@@ -249,83 +259,138 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(239, 68, 68, 0.1)',
     borderWidth: 1,
     borderColor: colors.danger,
-    borderRadius: radius.md,
+    borderRadius: 8,
     padding: spacing.sm,
+    marginHorizontal: spacing.md,
     marginBottom: spacing.sm
   },
   errorText: {
     color: colors.danger,
-    fontWeight: '700',
+    fontWeight: '800',
     fontSize: 12
   },
   listContent: {
+    paddingHorizontal: spacing.md,
     paddingBottom: spacing.xxl
   },
   userCard: {
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radius.md,
+    borderRadius: 12,
     padding: spacing.md,
     marginBottom: spacing.md
   },
   userTop: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center'
+    alignItems: 'center',
+    gap: spacing.sm
+  },
+  avatarCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.backgroundSecondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border
+  },
+  avatarText: {
+    color: colors.primary,
+    fontWeight: '900',
+    fontSize: 16
   },
   userInfo: {
-    flex: 1,
-    marginRight: spacing.sm
+    flex: 1
   },
   userName: {
-    ...typography.body,
+    fontSize: 14,
     color: colors.white,
-    fontWeight: '800'
+    fontWeight: '900'
   },
   userEmail: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginTop: 2
+    fontSize: 11,
+    color: colors.textCaption,
+    marginTop: 2,
+    fontWeight: '700'
   },
   roleBadge: {
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: radius.full,
+    borderRadius: 6,
     borderWidth: 1
   },
   roleText: {
-    fontSize: 10,
-    fontWeight: '800'
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 0.5
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginVertical: spacing.md,
+    opacity: 0.5
   },
   statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: spacing.sm
+    justifyContent: 'space-between',
+    marginBottom: spacing.md
+  },
+  statusInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6
   },
   statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 6
+    width: 6,
+    height: 6,
+    borderRadius: 3
   },
   statusText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    fontWeight: '700'
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.5
   },
   reasonText: {
-    ...typography.caption,
+    fontSize: 10,
     color: colors.textCaption,
-    marginLeft: 6
+    fontWeight: '700',
+    fontStyle: 'italic',
+    flex: 1,
+    textAlign: 'right',
+    marginLeft: spacing.sm
   },
   actionsRow: {
-    marginTop: spacing.md,
     flexDirection: 'row',
     gap: spacing.sm
   },
-  actionBtn: {
-    flex: 1
+  actionBtnBase: {
+    flex: 1,
+    height: 44,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6
+  },
+  actionBtnText: {
+    color: colors.white,
+    fontWeight: '900',
+    fontSize: 11,
+    letterSpacing: 0.5
+  },
+  secondaryAction: {
+    backgroundColor: colors.backgroundSecondary,
+    borderWidth: 1,
+    borderColor: colors.border
+  },
+  dangerAction: {
+    backgroundColor: colors.danger
+  },
+  successAction: {
+    backgroundColor: colors.success
   },
   footerLoad: {
     alignItems: 'center',
@@ -333,47 +398,53 @@ const styles = StyleSheet.create({
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    justifyContent: 'center',
-    padding: spacing.lg
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'flex-end',
   },
   modalCard: {
     backgroundColor: colors.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radius.lg,
-    padding: spacing.lg
+    padding: spacing.xl
   },
   modalTitle: {
-    ...typography.body,
+    fontSize: 18,
     color: colors.white,
-    fontWeight: '800'
+    fontWeight: '900'
   },
   modalSubtitle: {
-    ...typography.caption,
+    fontSize: 12,
     color: colors.textSecondary,
-    marginTop: 2,
-    marginBottom: spacing.sm
+    marginTop: 4,
+    marginBottom: spacing.lg
   },
   modalOption: {
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radius.md,
+    borderRadius: 12,
     backgroundColor: colors.backgroundSecondary,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.lg,
     paddingHorizontal: spacing.md,
-    marginTop: spacing.sm
+    marginTop: spacing.sm,
+    alignItems: 'center'
   },
   modalOptionText: {
     color: colors.white,
-    fontWeight: '700'
+    fontWeight: '900',
+    fontSize: 14,
+    letterSpacing: 1
   },
   modalCancel: {
-    borderColor: colors.danger,
-    backgroundColor: 'rgba(239,68,68,0.12)'
+    marginTop: spacing.md,
+    paddingVertical: spacing.md,
+    alignItems: 'center'
   },
   modalCancelText: {
-    color: colors.danger,
-    fontWeight: '800'
+    color: colors.textCaption,
+    fontWeight: '900',
+    fontSize: 12,
+    letterSpacing: 1
   }
 });
