@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import ScreenContainer from '../../components/layout/ScreenContainer';
@@ -89,10 +89,11 @@ export default function DashboardScreen({ navigation }: any) {
   return (
     <ScreenContainer scroll backgroundColor={colors.background}>
       <View style={styles.header}>
-        <View>
-          <Text style={styles.brandLogo}>NINE HALF</Text>
-          <Text style={styles.brandTagline}>COMMAND CENTER</Text>
-        </View>
+        <Image 
+          source={require('../../../assets/logo.png')} 
+          style={styles.logoImage} 
+          resizeMode="contain" 
+        />
         <Pressable 
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -186,18 +187,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     marginTop: spacing.xs
   },
-  brandLogo: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: colors.white,
-    letterSpacing: 1
-  },
-  brandTagline: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: colors.primary,
-    letterSpacing: 2,
-    marginTop: -2
+  logoImage: {
+    width: 120,
+    height: 40,
   },
   profileButton: {
     padding: 2

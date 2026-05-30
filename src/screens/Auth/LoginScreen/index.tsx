@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import ScreenContainer from '../../../components/layout/ScreenContainer';
@@ -46,10 +46,11 @@ export default function LoginScreen({ navigation }: any) {
     <ScreenContainer scroll backgroundColor={colors.background}>
       <View style={styles.content}>
         <View style={styles.header}>
-          <View style={styles.logoBox}>
-            <Text style={styles.logoText}>9/2</Text>
-          </View>
-          <Text style={styles.title}>NINE HALF</Text>
+          <Image 
+            source={require('../../../../assets/logo.png')} 
+            style={styles.logoImage} 
+            resizeMode="contain" 
+          />
           <Text style={styles.subtitle}>Gerenciamento premium de sneakers para revendedores.</Text>
         </View>
 
@@ -110,26 +111,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing.xxl,
   },
-  logoBox: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.lg,
-  },
-  logoText: {
-    color: colors.black,
-    fontSize: 28,
-    fontWeight: '900',
-  },
-  title: {
-    ...typography.h1,
-    fontSize: 32,
-    fontWeight: '900',
-    color: colors.white,
-    letterSpacing: 1,
+  logoImage: {
+    width: 200,
+    height: 100,
+    marginBottom: spacing.sm,
   },
   subtitle: {
     ...typography.body,
