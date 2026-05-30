@@ -13,18 +13,29 @@ export function useTransactions() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const completeTransaction = useCallback(async ({ reservationId, userId }: { reservationId: string; userId: string }) => {
-    setLoading(true);
-    setError('');
-    try {
-      return await completeTransactionService({ reservationId, userId });
-    } catch (err) {
-      setError(getErrorMessage(err) || 'Erro ao finalizar compra.');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const completeTransaction = useCallback(
+    async ({
+      reservationId,
+      userId,
+      paymentMethod
+    }: {
+      reservationId: string;
+      userId: string;
+      paymentMethod: string;
+    }) => {
+      setLoading(true);
+      setError('');
+      try {
+        return await completeTransactionService({ reservationId, userId, paymentMethod });
+      } catch (err) {
+        setError(getErrorMessage(err) || 'Erro ao finalizar compra.');
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
 
   const loadBuyerTransactions = useCallback(async (buyerId: string) => {
     setLoading(true);

@@ -10,10 +10,19 @@ import {
 import { PRODUCT_STATUS } from '../constants/productStatus';
 import { firestore } from './firebase/firestore';
 
-export function buildProductSearchKeywords({ modelo, marca }: { modelo: string; marca: string }) {
+export function buildProductSearchKeywords({
+  modelo,
+  marca,
+  cor
+}: {
+  modelo: string;
+  marca: string;
+  cor?: string;
+}) {
   const normalize = (value: string) => String(value || '').trim().toLowerCase();
   const model = normalize(modelo);
   const brand = normalize(marca);
+  const color = normalize(cor || '');
 
   const tokens = new Set<string>();
   const addTokens = (value: string) => {
@@ -30,6 +39,7 @@ export function buildProductSearchKeywords({ modelo, marca }: { modelo: string; 
 
   addTokens(model);
   addTokens(brand);
+  addTokens(color);
   return Array.from(tokens);
 }
 
@@ -114,7 +124,10 @@ export async function getGlobalProducts({
 }) {
   const q = buildQuery({ filters, pageSize, lastVisible });
   const snapshot = await getDocs(q);
-  const docs = snapshot.docs.map((item) => ({ id: item.id, ...item.data() })) as any[];
+  const hideMyProducts = filters?.hideMyProducts !== false;
+  const docs = snapshot.docs
+    .map((item) => ({ id: item.id, ...item.data() }))
+    .filter((item: any) => !(hideMyProducts && userId && item.ownerId === userId)) as any[];
   return {
     products: docs,
     lastVisible: snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null,

@@ -10,8 +10,9 @@ export type UserModel = {
   bio?: string;
   whatsapp?: string;
   cidade?: string;
-  pagamentos?: string;
   verificado?: boolean;
+  ativo?: boolean;
+  blockedReason?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -38,8 +39,9 @@ export function createUserModel(data: Partial<UserModel> = {}): UserModel {
     bio: data.bio || '',
     whatsapp: data.whatsapp || '',
     cidade: data.cidade || '',
-    pagamentos: data.pagamentos || '',
     verificado: data.verificado || false,
+    ativo: data.ativo !== false,
+    blockedReason: data.blockedReason || '',
     createdAt: data.createdAt || now,
     updatedAt: data.updatedAt || now
   };

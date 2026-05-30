@@ -8,6 +8,7 @@ export type ProductModel = {
   ownerId: string;
   modelo: string;
   marca: string;
+  cor: string;
   numeracao: string;
   preco: string;
   precoNumber: number;
@@ -42,6 +43,7 @@ export function createProductModel(data: Partial<ProductModel> = {}): ProductMod
     ownerId: data.ownerId || '',
     modelo: data.modelo || '',
     marca: data.marca || '',
+    cor: data.cor || '',
     numeracao: data.numeracao || '',
     preco: data.preco || '',
     precoNumber: data.precoNumber || 0,

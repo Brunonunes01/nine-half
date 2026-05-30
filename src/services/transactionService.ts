@@ -9,6 +9,7 @@ import {
   where
 } from 'firebase/firestore';
 import { PRODUCT_STATUS } from '../constants/productStatus';
+import { PAYMENT_METHODS } from '../constants/paymentMethods';
 import { RESERVATION_STATUS } from '../constants/reservationStatus';
 import { TRANSACTION_STATUS } from '../constants/transactionStatus';
 import { createTransactionModel } from '../models/TransactionModel';
@@ -20,11 +21,17 @@ const TRANSACTIONS_COLLECTION = 'transactions';
 
 export async function completeTransaction({
   reservationId,
-  userId
+  userId,
+  paymentMethod
 }: {
   reservationId: string;
   userId: string;
+  paymentMethod: string;
 }) {
+  if (!paymentMethod) {
+    throw new Error('Selecione um metodo de pagamento.');
+  }
+
   try {
     const result = await runTransaction(firestore, async (transaction) => {
       const reservationRef = doc(firestore, RESERVATIONS_COLLECTION, reservationId);
@@ -72,8 +79,12 @@ export async function completeTransaction({
         valor: String(product.preco || '0'),
         productModel: reservation.productModel || product.modelo || '',
         productBrand: reservation.productBrand || product.marca || '',
+        productColor: reservation.productColor || product.cor || '',
+        productSize: reservation.productSize || String(product.numeracao || ''),
+        productLocation: reservation.productLocation || product.localizacao || '',
         productPrice: reservation.productPrice || String(product.preco || ''),
         productImageUrl: reservation.productImageUrl || product.imagemUrl || '',
+        paymentMethod: paymentMethod || PAYMENT_METHODS.OUTRO,
         status: TRANSACTION_STATUS.COMPLETED
       });
 

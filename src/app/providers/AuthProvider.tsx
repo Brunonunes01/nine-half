@@ -6,7 +6,12 @@ import {
   onAuthStateChangedListener,
   register as registerService
 } from '../../services/authService';
-import { getMyPrivateProfile, getUserById, updateUserProfile } from '../../services/userService';
+import {
+  getMyPrivateProfile,
+  getUserById,
+  updateMyPrivateProfile,
+  updateUserProfile
+} from '../../services/userService';
 import { getErrorMessage } from '../../utils/errors';
 
 export const AuthContext = createContext<any>(null);
@@ -94,6 +99,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, syncUser]);
 
+  const updatePrivateProfile = useCallback(async (data: any) => {
+    if (!user?.uid) return;
+    setLoading(true);
+    setError('');
+    try {
+      await updateMyPrivateProfile(user.uid, data);
+      await syncUser({ uid: user.uid, email: user.email });
+    } catch (err) {
+      setError(getErrorMessage(err));
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [user, syncUser]);
+
   const logout = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -115,9 +135,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login,
       register,
       updateProfile,
+      updatePrivateProfile,
       logout
     }),
-    [user, loading, error, login, register, updateProfile, logout]
+    [user, loading, error, login, register, updateProfile, updatePrivateProfile, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

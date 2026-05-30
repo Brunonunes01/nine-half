@@ -33,7 +33,7 @@ export async function createProduct(productData) {
   });
 
   const precoNumber = Number(String(product.preco || '0').replace(',', '.')) || 0;
-  const keywords = buildProductSearchKeywords({ modelo: product.modelo, marca: product.marca });
+  const keywords = buildProductSearchKeywords({ modelo: product.modelo, marca: product.marca, cor: product.cor });
   
   const payload = {
     ...product,
@@ -127,10 +127,11 @@ export async function updateProduct(productId, data) {
   delete payload.status;
   delete payload.createdAt;
 
-  if (payload.modelo || payload.marca) {
+  if (payload.modelo || payload.marca || payload.cor !== undefined) {
     const model = String(payload.modelo ?? current?.modelo ?? '').trim();
     const brand = String(payload.marca ?? current?.marca ?? '').trim();
-    const keywords = buildProductSearchKeywords({ modelo: model, marca: brand });
+    const color = String(payload.cor ?? current?.cor ?? '').trim();
+    const keywords = buildProductSearchKeywords({ modelo: model, marca: brand, cor: color });
     payload.modeloLower = model.toLowerCase();
     payload.marcaLower = brand.toLowerCase();
     payload.searchKeywords = keywords;

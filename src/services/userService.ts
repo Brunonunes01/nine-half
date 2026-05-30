@@ -87,7 +87,6 @@ export async function updateMyPrivateProfile(userId: string, data: any) {
   delete payload.bio;
   delete payload.whatsapp;
   delete payload.cidade;
-  delete payload.pagamentos;
   delete payload.verificado;
 
   await updateDoc(userPrivateRef, {
