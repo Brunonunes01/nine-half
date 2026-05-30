@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getApp, getApps, initializeApp } from 'firebase/app';
-import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
+import { initializeAuth, getReactNativePersistence, getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -12,25 +12,17 @@ const firebaseConfig = {
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID
 };
 
-const firebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
+let firebaseApp;
+let firebaseAuth: any;
 
-let firebaseAuth;
-
-try {
-  // Use official getReactNativePersistence for correct async storage handling
+if (!getApps().length) {
+  firebaseApp = initializeApp(firebaseConfig);
   firebaseAuth = initializeAuth(firebaseApp, {
     persistence: getReactNativePersistence(AsyncStorage)
   });
-} catch (error: any) {
-  // If initializeAuth throws because it was already initialized, fallback to getAuth
-  if (error?.code === 'auth/already-initialized') {
-    const { getAuth } = require('firebase/auth');
-    firebaseAuth = getAuth(firebaseApp);
-  } else {
-    // Other errors should just grab the auth instance as a last resort
-    const { getAuth } = require('firebase/auth');
-    firebaseAuth = getAuth(firebaseApp);
-  }
+} else {
+  firebaseApp = getApp();
+  firebaseAuth = getAuth(firebaseApp);
 }
 
 const firestore = getFirestore(firebaseApp);
