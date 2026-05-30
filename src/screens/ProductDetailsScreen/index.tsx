@@ -57,7 +57,7 @@ export default function ProductDetailsScreen({ navigation, route }: any) {
   const selectedImage = productImages[selectedImageIndex] || '';
 
   const isOwner = selectedProduct.ownerId === user?.uid;
-  const canReserve = source === 'global' && !isOwner && selectedProduct.status === PRODUCT_STATUS.AVAILABLE;
+  const canReserve = !isOwner && selectedProduct.status === PRODUCT_STATUS.AVAILABLE;
   const isProfileComplete = !!(user?.documento && user?.endereco && user?.whatsapp);
 
   async function handleReserve() {
@@ -72,11 +72,10 @@ export default function ProductDetailsScreen({ navigation, route }: any) {
 
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      await reserveProduct({ productId: selectedProduct.id, buyerId: user.uid });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Reserva Criada', 'Sua reserva foi solicitada com sucesso!');
-    } catch (_) {
+      navigation.navigate(ROUTES.CHECKOUT, { productId: selectedProduct.id });
+    } catch (err: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Erro na Reserva', err?.message || 'Não foi possível completar a reserva.');
     }
   }
 
@@ -181,7 +180,7 @@ export default function ProductDetailsScreen({ navigation, route }: any) {
       </ScreenContainer>
 
       <View style={[styles.fixedFooter, { paddingBottom: insets.bottom + spacing.md }]}>
-        {canReserve ? (
+        {canReserve && user ? (
           <Button title="RESERVAR SNEAKER" onPress={handleReserve} loading={reserving} />
         ) : isOwner ? (
           <Button
@@ -191,10 +190,14 @@ export default function ProductDetailsScreen({ navigation, route }: any) {
           />
         ) : (
           <Button
-            title={selectedProduct.status === PRODUCT_STATUS.AVAILABLE ? "LOGAR PARA RESERVAR" : "INDISPONÍVEL"}
+            title={!user ? "LOGAR PARA RESERVAR" : selectedProduct.status === PRODUCT_STATUS.AVAILABLE ? "RESERVAR" : "INDISPONÍVEL"}
             variant="secondary"
-            disabled
-            onPress={() => {}}
+            disabled={selectedProduct.status !== PRODUCT_STATUS.AVAILABLE}
+            onPress={() => {
+              if (!user) {
+                navigation.navigate(ROUTES.LOGIN);
+              }
+            }}
           />
         )}
       </View>

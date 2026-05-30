@@ -13,6 +13,7 @@ import GlobalStockScreen from '../../screens/GlobalStockScreen';
 import MyReservationsScreen from '../../screens/MyReservationsScreen';
 import MyTransactionsScreen from '../../screens/MyTransactionsScreen';
 import TransactionDetailsScreen from '../../screens/TransactionDetailsScreen';
+import CheckoutScreen from '../../screens/CheckoutScreen';
 import AdminDashboardScreen from '../../screens/Admin/AdminDashboardScreen';
 import AdminUsersScreen from '../../screens/Admin/AdminUsersScreen';
 import Loading from '../../components/ui/Loading';
@@ -44,6 +45,7 @@ function PrivateNavigator() {
       <Stack.Screen name={ROUTES.GLOBAL_STOCK} component={GlobalStockScreen} />
       <Stack.Screen name={ROUTES.PRODUCT_FORM} component={ProductFormScreen} />
       <Stack.Screen name={ROUTES.PRODUCT_DETAILS} component={ProductDetailsScreen} />
+      <Stack.Screen name={ROUTES.CHECKOUT} component={CheckoutScreen} />
       <Stack.Screen name={ROUTES.PROFILE} component={ProfileScreen} />
       <Stack.Screen name={ROUTES.MY_RESERVATIONS} component={MyReservationsScreen} />
       <Stack.Screen name={ROUTES.MY_TRANSACTIONS} component={MyTransactionsScreen} />

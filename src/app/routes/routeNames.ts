@@ -7,6 +7,7 @@ export const ROUTES = {
   GLOBAL_STOCK: 'GlobalStock',
   PRODUCT_FORM: 'ProductForm',
   PRODUCT_DETAILS: 'ProductDetails',
+  CHECKOUT: 'Checkout',
   MY_RESERVATIONS: 'MyReservations',
   MY_TRANSACTIONS: 'MyTransactions',
   TRANSACTION_DETAILS: 'TransactionDetails',
