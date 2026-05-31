@@ -47,7 +47,7 @@ export default function ScreenContainer({
       <StatusBar barStyle="light-content" backgroundColor={backgroundColor} />
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         {scroll ? (
           <ScrollView 

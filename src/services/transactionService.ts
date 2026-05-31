@@ -90,6 +90,8 @@ export async function completeTransaction({
 
       transaction.set(txRef, {
         ...txModel,
+        cashboxCredited: true,
+        cashboxCreditedAt: serverTimestamp(),
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         completedAt: serverTimestamp()

@@ -1,10 +1,12 @@
 import React from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { BackHandler, Image, Platform, Pressable, StyleSheet, Text, ToastAndroid, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import ScreenContainer from '../../components/layout/ScreenContainer';
 import Header from '../../components/layout/Header';
 import { useAuth } from '../../hooks/useAuth';
+import { useChat } from '../../hooks/useChat';
 import { useReservations } from '../../hooks/useReservations';
 import { useTransactions } from '../../hooks/useTransactions';
 import { ROUTES } from '../../app/routes/routeNames';
@@ -78,22 +80,49 @@ function HubAction({
 
 export default function DashboardScreen({ navigation }: any) {
   const { user } = useAuth();
+  const { unreadCount, listenUnreadCount } = useChat();
   const { reservations } = useReservations();
   const { transactions } = useTransactions();
   const isAdmin = user?.tipo === USER_TYPES.ADMIN;
+  const lastBackPressAt = React.useRef(0);
 
   const firstName = user?.nome?.split(' ')[0] || 'Sneakerhead';
   const totalReservations = reservations?.length || 0;
   const totalTransactions = transactions?.length || 0;
 
+  useFocusEffect(
+    React.useCallback(() => {
+      const onBackPress = () => {
+        const now = Date.now();
+        if (now - lastBackPressAt.current < 2000) {
+          return false;
+        }
+
+        lastBackPressAt.current = now;
+        if (Platform.OS === 'android') {
+          ToastAndroid.show('Pressione voltar novamente para sair', ToastAndroid.SHORT);
+        }
+        return true;
+      };
+
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => subscription.remove();
+    }, [])
+  );
+
+  React.useEffect(() => {
+    if (!user?.uid) return;
+    const unsubscribe = listenUnreadCount(user.uid);
+    return () => unsubscribe?.();
+  }, [user?.uid, listenUnreadCount]);
+
   return (
     <ScreenContainer scroll backgroundColor={colors.background}>
       <View style={styles.header}>
-        <Image 
-          source={require('../../../assets/logo.png')} 
-          style={styles.logoImage} 
-          resizeMode="contain" 
-        />
+        <View>
+          <Text style={styles.brandLogo}>NINE HALF</Text>
+          <Text style={styles.brandTagline}>COMMAND CENTER</Text>
+        </View>
         <Pressable 
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -157,9 +186,46 @@ export default function DashboardScreen({ navigation }: any) {
             onPress={() => navigation.navigate(ROUTES.MY_TRANSACTIONS)}
           >
             <Ionicons name="receipt-outline" size={20} color={colors.white} />
-            <Text style={styles.miniHubTitle}>VENDAS</Text>
+            <Text style={styles.miniHubTitle}>HISTORICO</Text>
           </Pressable>
         </View>
+        <Pressable
+          style={styles.cashboxCard}
+          onPress={() => navigation.navigate(ROUTES.MY_CASHBOX)}
+        >
+          <View style={styles.cashboxIconWrap}>
+            <Ionicons name="wallet-outline" size={20} color={colors.success} />
+          </View>
+          <View style={styles.cashboxTextWrap}>
+            <Text style={styles.cashboxTitle}>MEU CAIXA</Text>
+            <Text style={styles.cashboxSubtitle}>Saldo e entradas das vendas concluidas</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textCaption} />
+        </Pressable>
+
+        <Pressable
+          style={styles.cashboxCard}
+          onPress={() => navigation.navigate(ROUTES.MY_CHATS)}
+        >
+          <View style={styles.cashboxIconWrap}>
+            <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.accent} />
+          </View>
+          <View style={styles.cashboxTextWrap}>
+            <Text style={styles.cashboxTitle}>MENSAGENS</Text>
+            <Text style={styles.cashboxSubtitle}>
+              {unreadCount > 0
+                ? `${unreadCount} conversa(s) com mensagens novas`
+                : 'Nenhuma mensagem nova no momento'}
+            </Text>
+          </View>
+          {unreadCount > 0 ? (
+            <View style={styles.unreadBadge}>
+              <Text style={styles.unreadBadgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+            </View>
+          ) : (
+            <Ionicons name="chevron-forward" size={18} color={colors.textCaption} />
+          )}
+        </Pressable>
       </View>
 
       {isAdmin && (
@@ -184,12 +250,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: spacing.md,
-    marginTop: spacing.xs
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xs,
   },
-  logoImage: {
-    width: 120,
-    height: 40,
+  brandLogo: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: colors.white,
+    letterSpacing: 1
+  },
+  brandTagline: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.primary,
+    letterSpacing: 2,
+    marginTop: -2
   },
   profileButton: {
     padding: 2
@@ -353,6 +428,52 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: colors.white,
     marginTop: 4
+  },
+  cashboxCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginTop: spacing.sm,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+    padding: spacing.md
+  },
+  cashboxIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  cashboxTextWrap: {
+    flex: 1
+  },
+  cashboxTitle: {
+    fontSize: 12,
+    fontWeight: '900',
+    color: colors.white
+  },
+  cashboxSubtitle: {
+    marginTop: 2,
+    fontSize: 11,
+    color: colors.textSecondary
+  },
+  unreadBadge: {
+    minWidth: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6
+  },
+  unreadBadgeText: {
+    color: colors.white,
+    fontSize: 12,
+    fontWeight: '900'
   },
   pressed: {
     opacity: 0.8,

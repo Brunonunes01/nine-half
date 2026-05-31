@@ -10,6 +10,7 @@ import Loading from '../../components/ui/Loading';
 import EmptyState from '../../components/ui/EmptyState';
 import Badge from '../../components/ui/Badge';
 import { getPaymentMethodLabel } from '../../constants/paymentMethods';
+import { ROUTES } from '../../app/routes/routeNames';
 import { useTransactions } from '../../hooks/useTransactions';
 import { getUserById } from '../../services/userService';
 import { colors } from '../../theme/colors';
@@ -297,6 +298,14 @@ export default function TransactionDetailsScreen({ route, navigation }: any) {
         >
           <Ionicons name="document-text-outline" size={20} color={colors.black} />
           <Text style={styles.shareButtonText}>{pdfLoading ? 'GERANDO PDF...' : 'COMPARTILHAR PDF'}</Text>
+        </Pressable>
+
+        <Pressable
+          style={[styles.shareButton, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, marginTop: spacing.sm }]}
+          onPress={() => navigation.navigate(ROUTES.CHAT_ROOM, { transactionId: selectedTransaction.id })}
+        >
+          <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.white} />
+          <Text style={[styles.shareButtonText, { color: colors.white }]}>ABRIR CHAT DA COMPRA</Text>
         </Pressable>
       </ScrollView>
     </ScreenContainer>

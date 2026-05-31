@@ -11,7 +11,10 @@ export const ROUTES = {
   CHECKOUT: 'Checkout',
   MY_RESERVATIONS: 'MyReservations',
   MY_TRANSACTIONS: 'MyTransactions',
+  MY_CHATS: 'MyChats',
+  MY_CASHBOX: 'MyCashbox',
   TRANSACTION_DETAILS: 'TransactionDetails',
+  CHAT_ROOM: 'ChatRoom',
   ADMIN_DASHBOARD: 'AdminDashboard',
   ADMIN_USERS: 'AdminUsers'
 };

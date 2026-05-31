@@ -13,7 +13,10 @@ import PublicProfileScreen from '../../screens/PublicProfileScreen';
 import GlobalStockScreen from '../../screens/GlobalStockScreen';
 import MyReservationsScreen from '../../screens/MyReservationsScreen';
 import MyTransactionsScreen from '../../screens/MyTransactionsScreen';
+import MyChatsScreen from '../../screens/MyChatsScreen';
+import MyCashboxScreen from '../../screens/MyCashboxScreen';
 import TransactionDetailsScreen from '../../screens/TransactionDetailsScreen';
+import ChatRoomScreen from '../../screens/ChatRoomScreen/index';
 import CheckoutScreen from '../../screens/CheckoutScreen';
 import AdminDashboardScreen from '../../screens/Admin/AdminDashboardScreen';
 import AdminUsersScreen from '../../screens/Admin/AdminUsersScreen';
@@ -51,7 +54,10 @@ function PrivateNavigator() {
       <Stack.Screen name={ROUTES.PROFILE} component={ProfileScreen} />
       <Stack.Screen name={ROUTES.MY_RESERVATIONS} component={MyReservationsScreen} />
       <Stack.Screen name={ROUTES.MY_TRANSACTIONS} component={MyTransactionsScreen} />
+      <Stack.Screen name={ROUTES.MY_CHATS} component={MyChatsScreen} />
+      <Stack.Screen name={ROUTES.MY_CASHBOX} component={MyCashboxScreen} />
       <Stack.Screen name={ROUTES.TRANSACTION_DETAILS} component={TransactionDetailsScreen} />
+      <Stack.Screen name={ROUTES.CHAT_ROOM} component={ChatRoomScreen} />
       <Stack.Screen name={ROUTES.ADMIN_DASHBOARD} component={AdminDashboardScreen} />
       <Stack.Screen name={ROUTES.ADMIN_USERS} component={AdminUsersScreen} />
     </Stack.Navigator>
