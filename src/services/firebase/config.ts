@@ -1,7 +1,7 @@
 import { getApp, getApps, initializeApp } from 'firebase/app';
-import { getAuth, initializeAuth, getReactNativePersistence, browserLocalPersistence } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getAuth, initializeAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 import { Platform } from 'react-native';
 
 const firebaseConfig = {
@@ -15,32 +15,49 @@ const firebaseConfig = {
 
 const firebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
-const getReactNativePersistenceSafe = () => {
-  try {
-    const authModule = require('firebase/auth');
-    return authModule.getReactNativePersistence || null;
-  } catch (err) {
-    return null;
-  }
-};
+function getReactNativePersistenceFactory():
+  | ((storage: any) => any)
+  | null {
+  if (Platform.OS === 'web') return null;
 
-const createAuth = () => {
+  try {
+    const mod = require('firebase/auth');
+    if (typeof mod?.getReactNativePersistence === 'function') {
+      return mod.getReactNativePersistence;
+    }
+  } catch (_) {}
+
+  try {
+    const mod = require('firebase/node_modules/@firebase/auth');
+    if (typeof mod?.getReactNativePersistence === 'function') {
+      return mod.getReactNativePersistence;
+    }
+  } catch (_) {}
+
+  return null;
+}
+
+function createAuth() {
   if (Platform.OS === 'web') {
     return getAuth(firebaseApp);
   }
 
-  try {
-    const persistenceFactory = getReactNativePersistenceSafe();
-    if (persistenceFactory && AsyncStorage) {
+  const persistenceFactory = getReactNativePersistenceFactory();
+  if (persistenceFactory) {
+    try {
       return initializeAuth(firebaseApp, {
         persistence: persistenceFactory(AsyncStorage),
       });
+    } catch (err: any) {
+      const msg = String(err?.message || '');
+      if (!msg.includes('already been initialized')) {
+        console.warn('[firebase/config] Falha ao inicializar auth com persistencia:', msg);
+      }
     }
-    return getAuth(firebaseApp);
-  } catch (error) {
-    return getAuth(firebaseApp);
   }
-};
+
+  return getAuth(firebaseApp);
+}
 
 const firebaseAuth = createAuth();
 const firestore = getFirestore(firebaseApp);
