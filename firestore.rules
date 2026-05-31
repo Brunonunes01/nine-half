@@ -89,6 +89,49 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    function isChatParticipant(chatData) {
+      return isSignedIn() && (chatData.buyerId == request.auth.uid || chatData.sellerId == request.auth.uid || isAdmin());
+    }
+
+    function isTransactionParticipant(transactionId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/transactions/$(transactionId))
+        && (
+          get(/databases/$(database)/documents/transactions/$(transactionId)).data.buyerId == request.auth.uid
+          || get(/databases/$(database)/documents/transactions/$(transactionId)).data.sellerId == request.auth.uid
+          || isAdmin()
+        );
+    }
+
+    match /chats/{chatId} {
+      allow get: if (resource != null && isChatParticipant(resource.data)) || isTransactionParticipant(chatId);
+      allow list: if isSignedIn() && (resource.data.buyerId == request.auth.uid || resource.data.sellerId == request.auth.uid || isAdmin());
+      allow create: if isTransactionParticipant(chatId)
+        && get(/databases/$(database)/documents/transactions/$(chatId)).data.status == 'concluida'
+        && request.resource.data.transactionId == chatId
+        && request.resource.data.buyerId == get(/databases/$(database)/documents/transactions/$(chatId)).data.buyerId
+        && request.resource.data.sellerId == get(/databases/$(database)/documents/transactions/$(chatId)).data.sellerId
+        && request.resource.data.transactionId is string
+        && request.resource.data.participants is list;
+      allow update: if isChatParticipant(resource.data)
+        && request.resource.data.buyerId == resource.data.buyerId
+        && request.resource.data.sellerId == resource.data.sellerId
+        && request.resource.data.transactionId == resource.data.transactionId;
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow read: if exists(/databases/$(database)/documents/chats/$(chatId))
+          && isChatParticipant(get(/databases/$(database)/documents/chats/$(chatId)).data);
+        allow create: if isSignedIn()
+          && exists(/databases/$(database)/documents/chats/$(chatId))
+          && isChatParticipant(get(/databases/$(database)/documents/chats/$(chatId)).data)
+          && request.resource.data.chatId == chatId
+          && request.resource.data.senderId == request.auth.uid
+          && request.resource.data.text is string;
+        allow update, delete: if false;
+      }
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
