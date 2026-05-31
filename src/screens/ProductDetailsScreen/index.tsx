@@ -28,7 +28,7 @@ export default function ProductDetailsScreen({ navigation, route }: any) {
   const { width } = useWindowDimensions();
   const { user } = useAuth();
   const { selectedProduct, loadProductById, loading } = useProducts();
-  const { loading: reserving } = useReservations();
+  const { reserveProduct, loading: reserving } = useReservations();
 
   const [seller, setSeller] = useState<any>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -57,20 +57,47 @@ export default function ProductDetailsScreen({ navigation, route }: any) {
 
   const isOwner = selectedProduct.ownerId === user?.uid;
   const canReserve = !isOwner && selectedProduct.status === PRODUCT_STATUS.AVAILABLE;
-  const isProfileComplete = !!(user?.documento && user?.endereco && user?.whatsapp);
+  const isProfileComplete = !!(
+    String(user?.documento || '').trim() &&
+    String(user?.endereco || '').trim() &&
+    String(user?.telefone || user?.whatsapp || '').trim()
+  );
 
   async function handleReserve() {
     if (!isProfileComplete) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      Alert.alert('Perfil Incompleto', 'Complete seus dados para reservar este par.', [
-        { text: 'Ir para Perfil', onPress: () => navigation.navigate(ROUTES.PROFILE) },
-        { text: 'Agora não', style: 'cancel' }
-      ]);
+      const missingFields: string[] = [];
+      if (!String(user?.documento || '').trim()) missingFields.push('CPF/CNPJ');
+      if (!String(user?.endereco || '').trim()) missingFields.push('Endereco');
+      if (!String(user?.telefone || user?.whatsapp || '').trim()) missingFields.push('WhatsApp');
+
+      Alert.alert(
+        'Complete seu perfil',
+        `Para reservar este sneaker, faltam: ${missingFields.join(', ')}.`,
+        [
+          { text: 'Ir para Perfil', onPress: () => navigation.navigate(ROUTES.PROFILE) },
+          { text: 'Agora nao', style: 'cancel' }
+        ]
+      );
       return;
     }
 
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    navigation.navigate(ROUTES.CHECKOUT, { productId: selectedProduct.id });
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      await reserveProduct({ productId: selectedProduct.id, buyerId: user.uid });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert(
+        'Reserva confirmada',
+        'Produto reservado com sucesso. Voce pode finalizar a compra em Minhas Reservas.',
+        [
+          { text: 'Ir para Minhas Reservas', onPress: () => navigation.navigate(ROUTES.MY_RESERVATIONS) },
+          { text: 'Ok' }
+        ]
+      );
+    } catch (err: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Nao foi possivel reservar', err?.message || 'Tente novamente em instantes.');
+    }
   }
 
   return (

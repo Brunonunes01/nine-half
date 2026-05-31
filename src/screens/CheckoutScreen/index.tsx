@@ -25,7 +25,9 @@ export default function CheckoutScreen({ navigation, route }: any) {
   const { reserveProduct, loading: reserving } = useReservations();
   const { completeTransaction, loading: completing } = useTransactions();
   
-  const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS.PIX);
+  const [paymentMethod, setPaymentMethod] = useState<(typeof PAYMENT_METHODS)[keyof typeof PAYMENT_METHODS]>(
+    PAYMENT_METHODS.PIX
+  );
   const [step, setStep] = useState(1); // 1: Revisão, 2: Pagamento
   const [useMyAddress, setUseMyAddress] = useState(true);
   const [destinatarioNome, setDestinatarioNome] = useState('');

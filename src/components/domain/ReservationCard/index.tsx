@@ -3,10 +3,7 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { RESERVATION_STATUS } from '../../../constants/reservationStatus';
 import { colors } from '../../../theme/colors';
-import { radius } from '../../../theme/radius';
-import { themeShadows } from '../../../theme/themeShadows';
 import { spacing } from '../../../theme/spacing';
-import { typography } from '../../../theme/typography';
 import { formatCurrencyBRL, formatSizeBR } from '../../../utils/formatters';
 import Badge from '../../ui/Badge';
 import Button from '../../ui/Button';
@@ -14,6 +11,7 @@ import Button from '../../ui/Button';
 export default function ReservationCard({
   reservation,
   userId,
+  nowMs,
   onCancel,
   cancelLoading,
   onComplete,
@@ -21,6 +19,7 @@ export default function ReservationCard({
 }: {
   reservation: any;
   userId: string;
+  nowMs?: number;
   onCancel: (reservation: any) => void;
   cancelLoading?: boolean;
   onComplete?: (reservation: any) => void;
@@ -32,6 +31,31 @@ export default function ReservationCard({
   const date = reservation?.createdAt?.seconds
     ? new Date(reservation.createdAt.seconds * 1000).toLocaleDateString('pt-BR')
     : '-';
+
+  const expiresSeconds = reservation?.expiresAt?.seconds;
+  const expiresNanos = reservation?.expiresAt?.nanoseconds || 0;
+  const expiresMs = expiresSeconds ? expiresSeconds * 1000 + Math.floor(expiresNanos / 1000000) : 0;
+  const remainingMs = expiresMs > 0 ? expiresMs - (nowMs || Date.now()) : 0;
+
+  const formatRemaining = (ms: number) => {
+    const clamped = Math.max(0, ms);
+    const totalSec = Math.floor(clamped / 1000);
+    const hours = Math.floor(totalSec / 3600);
+    const minutes = Math.floor((totalSec % 3600) / 60);
+    const seconds = totalSec % 60;
+
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    if (minutes > 0) return `${minutes}m ${seconds}s`;
+    return `${seconds}s`;
+  };
+
+  const remainingLabel = expiresMs > 0 ? formatRemaining(remainingMs) : '-';
+  const isExpiredByTime = isActive && expiresMs > 0 && remainingMs <= 0;
+  const remainingColor = isExpiredByTime
+    ? colors.danger
+    : remainingMs <= 15 * 60 * 1000
+      ? colors.warning
+      : colors.success;
 
   return (
     <View style={styles.card}>
@@ -51,7 +75,8 @@ export default function ReservationCard({
             <Text numberOfLines={1} style={styles.title}>{reservation?.productModel || 'Item'}</Text>
             <Text style={styles.price}>{formatCurrencyBRL(reservation?.productPrice)}</Text>
             <Text style={styles.metaProduct}>
-              {formatSizeBR(reservation?.productSize)}{reservation?.productColor ? ` • ${reservation.productColor}` : ''}
+              {formatSizeBR(reservation?.productSize)}
+              {reservation?.productColor ? ` • ${reservation.productColor}` : ''}
             </Text>
           </View>
         </View>
@@ -59,12 +84,22 @@ export default function ReservationCard({
       </View>
 
       <View style={styles.meta}>
-        <View style={styles.metaRow}>
-          <Ionicons name="calendar-outline" size={14} color={colors.textCaption} />
-          <Text style={styles.metaText}>Iniciada em {date}</Text>
+        <View style={styles.metaLeft}>
+          <View style={styles.metaRow}>
+            <Ionicons name="calendar-outline" size={14} color={colors.textCaption} />
+            <Text style={styles.metaText}>Iniciada em {date}</Text>
+          </View>
+          {isActive && expiresMs > 0 ? (
+            <View style={styles.metaRow}>
+              <Ionicons name="time-outline" size={14} color={remainingColor} />
+              <Text style={[styles.metaText, { color: remainingColor, fontWeight: '800' }]}>
+                {isExpiredByTime ? 'Tempo esgotado' : `Expira em ${remainingLabel}`}
+              </Text>
+            </View>
+          ) : null}
         </View>
         <Text style={styles.roleLabel}>
-          {isSeller ? 'VOCÊ É O VENDEDOR' : 'VOCÊ É O COMPRADOR'}
+          {isSeller ? 'VOCE E O VENDEDOR' : 'VOCE E O COMPRADOR'}
         </Text>
       </View>
 
@@ -175,7 +210,11 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+  },
+  metaLeft: {
+    flex: 1,
+    gap: 4
   },
   metaRow: {
     flexDirection: 'row',
@@ -203,3 +242,4 @@ const styles = StyleSheet.create({
     minHeight: 44,
   }
 });
+

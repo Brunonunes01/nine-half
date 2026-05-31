@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +22,7 @@ export default function MyReservationsScreen() {
   const { completeTransaction, loading: completing, error: transactionError } = useTransactions();
   const [pickerVisible, setPickerVisible] = useState(false);
   const [pendingReservation, setPendingReservation] = useState<any>(null);
+  const [nowMs, setNowMs] = useState(() => Date.now());
 
   const refresh = useCallback(() => {
     if (!user?.uid) return;
@@ -33,6 +34,11 @@ export default function MyReservationsScreen() {
       refresh();
     }, [refresh])
   );
+
+  useEffect(() => {
+    const timer = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const activeReservations = useMemo(
     () => reservations.filter(r => r.status === RESERVATION_STATUS.ACTIVE),
@@ -136,6 +142,7 @@ export default function MyReservationsScreen() {
             <ReservationCard
               reservation={item}
               userId={user?.uid}
+              nowMs={nowMs}
               onCancel={handleCancel}
               cancelLoading={loading}
               onComplete={handleComplete}

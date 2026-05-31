@@ -30,6 +30,7 @@ export default function ProfileScreen({ navigation }: any) {
   const [documento, setDocumento] = useState('');
   const [endereco, setEndereco] = useState('');
   const [cep, setCep] = useState('');
+  const [cidade, setCidade] = useState('');
 
   useEffect(() => {
     setNome(user?.nome || '');
@@ -37,6 +38,7 @@ export default function ProfileScreen({ navigation }: any) {
     setDocumento(user?.documento || '');
     setEndereco(user?.endereco || '');
     setCep(user?.cep || '');
+    setCidade(user?.cidade || '');
   }, [user]);
 
   const userInitial = useMemo(() => user?.nome?.charAt(0)?.toUpperCase() || 'S', [user?.nome]);
@@ -68,7 +70,7 @@ export default function ProfileScreen({ navigation }: any) {
     }
     setSaving(true);
     try {
-      await updateProfile({ nome: nome.trim() });
+      await updateProfile({ nome: nome.trim(), cidade: cidade.trim() });
       await updatePrivateProfile({
         telefone: telefone.trim(),
         documento: documento.trim(),
@@ -139,7 +141,7 @@ export default function ProfileScreen({ navigation }: any) {
                 </View>
                 <View style={styles.menuTextContent}>
                   <Text style={styles.menuTitle}>DADOS PESSOAIS</Text>
-                  <Text style={styles.menuSubtitle}>Nome, documento e endereço</Text>
+                  <Text style={styles.menuSubtitle}>Nome, cidade, documento e endereco</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={colors.textCaption} />
               </Pressable>
@@ -189,6 +191,7 @@ export default function ProfileScreen({ navigation }: any) {
             <View style={styles.form}>
               <Input label="NOME COMPLETO" value={nome} onChangeText={setNome} placeholder="Seu nome" />
               <Input label="WHATSAPP" value={telefone} onChangeText={setTelefone} placeholder="(00) 00000-0000" keyboardType="phone-pad" />
+              <Input label="CIDADE" value={cidade} onChangeText={setCidade} placeholder="Ex: Sao Paulo - SP" />
               <Input label="CPF/CNPJ" value={documento} onChangeText={setDocumento} placeholder="000.000.000-00" />
               <Input label="ENDEREÇO BASE" value={endereco} onChangeText={setEndereco} placeholder="Rua, Número, Bairro" />
               <Input label="CEP" value={cep} onChangeText={setCep} placeholder="00000-000" keyboardType="numeric" />

@@ -36,8 +36,7 @@ export async function createProduct(productData) {
   const keywords = buildProductSearchKeywords({ 
     modelo: product.modelo, 
     marca: product.marca, 
-    cor: product.cor,
-    numeracao: product.numeracao 
+    cor: product.cor
   });
   
   const payload = {
@@ -138,13 +137,11 @@ export async function updateProduct(productId, data) {
     const model = String(payload.modelo ?? current?.modelo ?? '').trim();
     const brand = String(payload.marca ?? current?.marca ?? '').trim();
     const color = String(payload.cor ?? current?.cor ?? '').trim();
-    const size = String(payload.numeracao ?? current?.numeracao ?? '').trim();
     
     const keywords = buildProductSearchKeywords({ 
       modelo: model, 
       marca: brand, 
-      cor: color,
-      numeracao: size 
+      cor: color
     });
     
     payload.modeloLower = model.toLowerCase();

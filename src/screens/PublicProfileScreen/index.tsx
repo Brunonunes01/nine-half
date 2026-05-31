@@ -26,7 +26,7 @@ export default function PublicProfileScreen({ route, navigation }: any) {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [userData, userProducts] = await Promise.all([
+      const [userData, userProducts]: [any, any[]] = await Promise.all([
         getUserById(userId),
         getProductsByOwner(userId)
       ]);
