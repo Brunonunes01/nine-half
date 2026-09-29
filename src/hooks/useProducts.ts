@@ -114,7 +114,7 @@ export function useProducts() {
       setProducts((prev) => prev.filter((item) => item.id !== productId));
       setSelectedProduct((prev) => (prev?.id === productId ? null : prev));
     } catch (err) {
-      setError('Voce nao tem permissao para editar este produto.');
+      setError('Você não tem permissão para editar este produto.');
       throw err;
     } finally {
       setLoading(false);

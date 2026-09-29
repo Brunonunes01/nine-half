@@ -1,5 +1,6 @@
 import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import { createUserModel, createUserPrivateModel } from '../models/UserModel';
+import { USER_TYPES } from '../constants/userTypes';
 import { firestore } from './firebase/firestore';
 
 const USERS_COLLECTION = 'users';
@@ -32,6 +33,69 @@ export async function createUserProfile(userData: any) {
   ]);
 
   return publicUser;
+}
+
+export async function ensureUserProfiles({
+  uid,
+  email,
+  nome
+}: {
+  uid: string;
+  email?: string;
+  nome?: string;
+}) {
+  const userRef = doc(firestore, USERS_COLLECTION, uid);
+  const userPrivateRef = doc(firestore, USERS_PRIVATE_COLLECTION, uid);
+
+  const [publicSnap, privateSnap] = await Promise.all([getDoc(userRef), getDoc(userPrivateRef)]);
+
+  const createTasks: Promise<any>[] = [];
+
+  if (!publicSnap.exists()) {
+    const fallbackName = String(nome || '').trim() || String(email || '').split('@')[0] || 'Usuário';
+    createTasks.push(
+      setDoc(
+        userRef,
+        {
+          id: uid,
+          nome: fallbackName,
+          email: email || '',
+          tipo: USER_TYPES.COMMON,
+          bio: '',
+          whatsapp: '',
+          cidade: '',
+          verificado: false,
+          ativo: true,
+          blockedReason: '',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        },
+        { merge: true }
+      )
+    );
+  }
+
+  if (!privateSnap.exists()) {
+    createTasks.push(
+      setDoc(
+        userPrivateRef,
+        {
+          id: uid,
+          documento: '',
+          endereco: '',
+          cep: '',
+          telefone: '',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        },
+        { merge: true }
+      )
+    );
+  }
+
+  if (createTasks.length > 0) {
+    await Promise.all(createTasks);
+  }
 }
 
 export async function getUserById(userId: string) {

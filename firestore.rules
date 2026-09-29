@@ -22,12 +22,26 @@ service cloud.firestore {
     // Perfil publico (visivel para usuarios autenticados)
     match /users/{userId} {
       allow get, list: if isSignedIn();
-      allow create: if isOwner(userId) && request.resource.data.id == request.auth.uid;
+
+      // Todo novo usuario nasce como comum, ativo e nao verificado.
+      allow create: if isOwner(userId)
+        && request.resource.data.id == request.auth.uid
+        && request.resource.data.tipo == 'comum'
+        && request.resource.data.ativo == true
+        && request.resource.data.verificado == false
+        && request.resource.data.blockedReason == '';
+
+      // O usuario pode editar o perfil, mas nao os campos administrativos.
+      // Apenas administradores podem alterar cargo, bloqueio e verificacao.
       allow update: if (
         isOwner(userId)
         && request.resource.data.id == resource.data.id
         && request.resource.data.email == resource.data.email
         && request.resource.data.tipo == resource.data.tipo
+        && request.resource.data.ativo == resource.data.ativo
+        && request.resource.data.verificado == resource.data.verificado
+        && request.resource.data.blockedReason == resource.data.blockedReason
+        && request.resource.data.createdAt == resource.data.createdAt
       ) || (
         isAdmin()
         && request.resource.data.id == resource.data.id
@@ -66,11 +80,20 @@ service cloud.firestore {
           request.resource.data.reservedBy == request.auth.uid
         )
         ||
-        // Permite que o dono ou o reservador cancelem a reserva ou marquem como vendido
+        // Permite cancelar reserva (dono ou reservador) e marcar como vendido (somente reservador)
         (
           resource.data.status == 'reservado' &&
-          (request.resource.data.status == 'disponivel' || request.resource.data.status == 'vendido') &&
-          (resource.data.ownerId == request.auth.uid || resource.data.reservedBy == request.auth.uid)
+          (
+            (
+              request.resource.data.status == 'disponivel' &&
+              (resource.data.ownerId == request.auth.uid || resource.data.reservedBy == request.auth.uid)
+            )
+            ||
+            (
+              request.resource.data.status == 'vendido' &&
+              resource.data.reservedBy == request.auth.uid
+            )
+          )
         )
       );
       allow delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
@@ -105,7 +128,9 @@ service cloud.firestore {
 
     match /chats/{chatId} {
       allow get: if (resource != null && isChatParticipant(resource.data)) || isTransactionParticipant(chatId);
-      allow list: if isSignedIn() && (resource.data.buyerId == request.auth.uid || resource.data.sellerId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn()
+        && resource != null
+        && (resource.data.buyerId == request.auth.uid || resource.data.sellerId == request.auth.uid || isAdmin());
       allow create: if isTransactionParticipant(chatId)
         && get(/databases/$(database)/documents/transactions/$(chatId)).data.status == 'concluida'
         && request.resource.data.transactionId == chatId

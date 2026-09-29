@@ -6,9 +6,9 @@ import {
   query,
   serverTimestamp,
   setDoc,
-  writeBatch,
   updateDoc,
-  where
+  where,
+  writeBatch
 } from 'firebase/firestore';
 import { firestore } from './firebase/firestore';
 import { createShowcaseModel } from '../models/ShowcaseModel';
@@ -28,11 +28,7 @@ export async function createShowcase({ userId, nome, visivel = false }) {
 }
 
 export async function getShowcaseByUserId(userId) {
-  const q = query(
-    collection(firestore, SHOWCASES_COLLECTION),
-    where('userId', '==', userId),
-    limit(1)
-  );
+  const q = query(collection(firestore, SHOWCASES_COLLECTION), where('userId', '==', userId), limit(1));
   const snapshot = await getDocs(q);
   if (snapshot.empty) return null;
 
@@ -46,45 +42,35 @@ export async function updateShowcase(showcaseId, data) {
 }
 
 export async function toggleShowcaseVisibility(showcaseId: string, visivel: boolean, userId: string) {
+  const showcaseRef = doc(firestore, SHOWCASES_COLLECTION, showcaseId);
+
+  // Mudanca principal da vitrine
+  await updateDoc(showcaseRef, { visivel, updatedAt: serverTimestamp() });
+
+  // Sincronizacao de produtos (best-effort)
   try {
-    console.log(`[showcaseService] Iniciando sincronização para Vitrine: ${showcaseId}, Usuário: ${userId}`);
-    const showcaseRef = doc(firestore, SHOWCASES_COLLECTION, showcaseId);
-    
-    // 1. Atualiza a vitrine
-    await updateDoc(showcaseRef, { visivel, updatedAt: serverTimestamp() });
-
-    // 2. Busca apenas os produtos que PERTENCEM ao usuário nesta vitrine
-    // É crucial filtrar por ownerId para satisfazer as regras de segurança do Firestore
-    const q = query(
-      collection(firestore, 'products'), 
-      where('showcaseId', '==', showcaseId)
-    );
-    
+    const q = query(collection(firestore, 'products'), where('showcaseId', '==', showcaseId));
     const productsSnapshot = await getDocs(q);
-    
-    if (productsSnapshot.empty) {
-      console.log('[showcaseService] Nenhum produto do usuário encontrado para sincronizar.');
-      return;
-    }
+    if (productsSnapshot.empty) return;
 
-    console.log(`[showcaseService] Sincronizando ${productsSnapshot.size} produtos...`);
-
-    // 3. Batch update
     const batch = writeBatch(firestore);
+    let updates = 0;
+
     productsSnapshot.docs.forEach((item) => {
       const data = item.data() as any;
       if (data?.ownerId !== userId) return;
+      updates += 1;
       batch.update(item.ref, {
         showcaseVisible: visivel,
         updatedAt: serverTimestamp()
       });
     });
 
-    await batch.commit();
-    console.log('[showcaseService] Sincronização concluída com sucesso.');
+    if (updates > 0) {
+      await batch.commit();
+    }
   } catch (error: any) {
-    console.error('[showcaseService] Erro na sincronização:', error);
-    throw error;
+    console.warn('[showcaseService] Vitrine atualizada, mas houve falha ao sincronizar produtos:', error?.message || error);
   }
 }
 

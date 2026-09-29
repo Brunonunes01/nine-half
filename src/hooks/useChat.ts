@@ -47,7 +47,7 @@ export function useChat() {
         return {
           ...chat,
           peerId: peerId || null,
-          peerName: peer?.nome || 'Usuario',
+          peerName: peer?.nome || 'Usuário',
           myRole,
           peerRole
         };

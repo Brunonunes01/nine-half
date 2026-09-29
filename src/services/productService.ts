@@ -74,6 +74,23 @@ export async function getProductsByOwner(ownerId) {
     });
 }
 
+export async function getPublicAvailableProductsByOwner(ownerId: string) {
+  const q = query(
+    collection(firestore, PRODUCTS_COLLECTION),
+    where('ownerId', '==', ownerId),
+    where('showcaseVisible', '==', true),
+    where('status', '==', PRODUCT_STATUS.AVAILABLE)
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs
+    .map((item) => ({ id: item.id, ...item.data() }))
+    .sort((a: any, b: any) => {
+      const aTime = a?.createdAt?.seconds || 0;
+      const bTime = b?.createdAt?.seconds || 0;
+      return bTime - aTime;
+    });
+}
+
 export async function getProductsByShowcase(showcaseId, ownerId) {
   // A vitrine já é vinculada ao dono; filtrar apenas por showcaseId evita
   // depender de índice composto desnecessário no carregamento da vitrine.

@@ -84,7 +84,7 @@ export async function updateUserRole({
   tipo: string;
 }) {
   if (![USER_TYPES.ADMIN, USER_TYPES.STORE_OWNER, USER_TYPES.COMMON].includes(tipo as any)) {
-    throw new Error('Tipo de usuario invalido.');
+    throw new Error('Tipo de usuário inválido.');
   }
 
   const userRef = doc(firestore, USERS_COLLECTION, userId);
@@ -106,7 +106,7 @@ export async function toggleUserActive({
   const userRef = doc(firestore, USERS_COLLECTION, userId);
   await updateDoc(userRef, {
     ativo,
-    blockedReason: ativo ? '' : reason || 'Bloqueado por administracao.',
+    blockedReason: ativo ? '' : reason || 'Bloqueado por administração.',
     updatedAt: serverTimestamp()
   });
 }

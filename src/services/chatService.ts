@@ -31,17 +31,17 @@ export async function ensureChatForTransaction({
     const txSnap = await transaction.get(txRef);
 
     if (!txSnap.exists()) {
-      throw new Error('Transacao nao encontrada.');
+      throw new Error('Transação não encontrada.');
     }
 
     const tx = txSnap.data() as any;
     const isParticipant = tx?.buyerId === userId || tx?.sellerId === userId;
     if (!isParticipant) {
-      throw new Error('Voce nao tem permissao para abrir este chat.');
+      throw new Error('Você não tem permissão para abrir este chat.');
     }
 
     if (tx?.status !== TRANSACTION_STATUS.COMPLETED) {
-      throw new Error('Chat disponivel apenas para vendas concluidas.');
+      throw new Error('Chat disponível apenas para vendas concluídas.');
     }
 
     const chatRef = doc(firestore, CHATS_COLLECTION, transactionId);
@@ -86,13 +86,13 @@ export async function sendChatMessage({
     const chatSnap = await transaction.get(chatRef);
 
     if (!chatSnap.exists()) {
-      throw new Error('Chat nao encontrado.');
+      throw new Error('Chat não encontrado.');
     }
 
     const chat = chatSnap.data() as any;
     const isParticipant = chat?.buyerId === senderId || chat?.sellerId === senderId;
     if (!isParticipant) {
-      throw new Error('Voce nao tem permissao para enviar mensagens neste chat.');
+      throw new Error('Você não tem permissão para enviar mensagens neste chat.');
     }
     const recipientId = chat?.buyerId === senderId ? chat?.sellerId : chat?.buyerId;
 

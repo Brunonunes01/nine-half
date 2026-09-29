@@ -5,16 +5,14 @@ import {
   signOut
 } from 'firebase/auth';
 import { firebaseAuth } from './firebase/auth';
-import { createUserProfile, getUserById } from './userService';
+import { createUserProfile } from './userService';
 import { USER_TYPES } from '../constants/userTypes';
 
 export async function login(email, password) {
   const credential = await signInWithEmailAndPassword(firebaseAuth, email, password);
-  const profile = await getUserById(credential.user.uid);
 
   return {
-    authUser: credential.user,
-    profile
+    authUser: credential.user
   };
 }
 

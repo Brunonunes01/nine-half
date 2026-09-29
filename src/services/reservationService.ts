@@ -17,6 +17,49 @@ const PRODUCTS_COLLECTION = 'products';
 const SHOWCASES_COLLECTION = 'showcases';
 const RESERVATIONS_COLLECTION = 'reservations';
 
+function getMsFromTimestamp(value: any): number {
+  if (!value) return 0;
+  if (typeof value?.seconds === 'number') return value.seconds * 1000;
+  if (value instanceof Date) return value.getTime();
+  return 0;
+}
+
+async function expireReservationIfNeeded(reservationId: string) {
+  await runTransaction(firestore, async (transaction) => {
+    const reservationRef = doc(firestore, RESERVATIONS_COLLECTION, reservationId);
+    const reservationSnap = await transaction.get(reservationRef);
+    if (!reservationSnap.exists()) return;
+
+    const reservation = reservationSnap.data() as any;
+    if (reservation?.status !== RESERVATION_STATUS.ACTIVE) return;
+
+    const expiresAtMs = getMsFromTimestamp(reservation?.expiresAt);
+    if (!expiresAtMs || expiresAtMs > Date.now()) return;
+
+    const productRef = doc(firestore, PRODUCTS_COLLECTION, reservation.productId);
+    const productSnap = await transaction.get(productRef);
+
+    transaction.update(reservationRef, {
+      status: RESERVATION_STATUS.EXPIRED,
+      cancelReason: 'Tempo de reserva expirado automaticamente.',
+      updatedAt: serverTimestamp()
+    });
+
+    if (productSnap.exists()) {
+      const product = productSnap.data() as any;
+      if (product?.status === PRODUCT_STATUS.RESERVED && product?.reservationId === reservationId) {
+        transaction.update(productRef, {
+          status: PRODUCT_STATUS.AVAILABLE,
+          reservedBy: null,
+          reservedAt: null,
+          reservationId: null,
+          updatedAt: serverTimestamp()
+        });
+      }
+    }
+  });
+}
+
 export async function reserveProduct({ productId, buyerId }: { productId: string; buyerId: string }) {
   try {
     const result = await runTransaction(firestore, async (transaction) => {
@@ -33,12 +76,44 @@ export async function reserveProduct({ productId, buyerId }: { productId: string
         throw new Error('Você não pode reservar seu próprio produto.');
       }
 
+      if (product.status === PRODUCT_STATUS.RESERVED && product.reservationId) {
+        const oldReservationRef = doc(firestore, RESERVATIONS_COLLECTION, String(product.reservationId));
+        const oldReservationSnap = await transaction.get(oldReservationRef);
+
+        if (oldReservationSnap.exists()) {
+          const oldReservation = oldReservationSnap.data() as any;
+          const oldExpiresAtMs = getMsFromTimestamp(oldReservation?.expiresAt);
+          const shouldExpire =
+            oldReservation?.status === RESERVATION_STATUS.ACTIVE &&
+            oldExpiresAtMs > 0 &&
+            oldExpiresAtMs <= Date.now();
+
+          if (shouldExpire) {
+            transaction.update(oldReservationRef, {
+              status: RESERVATION_STATUS.EXPIRED,
+              cancelReason: 'Tempo de reserva expirado automaticamente.',
+              updatedAt: serverTimestamp()
+            });
+
+            transaction.update(productRef, {
+              status: PRODUCT_STATUS.AVAILABLE,
+              reservedBy: null,
+              reservedAt: null,
+              reservationId: null,
+              updatedAt: serverTimestamp()
+            });
+
+            product.status = PRODUCT_STATUS.AVAILABLE;
+            product.reservationId = null;
+          }
+        }
+      }
+
       if (product.status !== PRODUCT_STATUS.AVAILABLE) {
         throw new Error('Produto já reservado ou vendido.');
       }
 
-      // Cálculo da data de expiração baseada na configuração do PRODUTO
-      const horasValidade = product.tempoReserva || 24; // Usa a config do vendedor ou padrão 24h
+      const horasValidade = product.tempoReserva || 24;
       const now = new Date();
       const expiresAt = new Date(now.getTime() + horasValidade * 60 * 60 * 1000);
 
@@ -66,7 +141,7 @@ export async function reserveProduct({ productId, buyerId }: { productId: string
         status: RESERVATION_STATUS.ACTIVE,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        expiresAt: Timestamp.fromDate(expiresAt), // Validade personalizada aqui
+        expiresAt: Timestamp.fromDate(expiresAt),
         cancelReason: null
       });
 
@@ -146,13 +221,38 @@ export async function cancelReservation({
 export async function getReservationsByUser(userId: string) {
   const qBuyer = query(collection(firestore, RESERVATIONS_COLLECTION), where('buyerId', '==', userId));
   const qSeller = query(collection(firestore, RESERVATIONS_COLLECTION), where('sellerId', '==', userId));
-  
+
   const [snapBuyer, snapSeller] = await Promise.all([getDocs(qBuyer), getDocs(qSeller)]);
-  
-  const all = [...snapBuyer.docs, ...snapSeller.docs].map(doc => ({ id: doc.id, ...doc.data() }));
-  const unique = Array.from(new Map(all.map(item => [item.id, item])).values());
-  
+
+  const all = [...snapBuyer.docs, ...snapSeller.docs].map((d) => ({ id: d.id, ...d.data() }));
+  const unique = Array.from(new Map(all.map((item: any) => [item.id, item])).values());
+
+  const expiredIds = unique
+    .filter((item: any) => item?.status === RESERVATION_STATUS.ACTIVE)
+    .filter((item: any) => {
+      const expiresAtMs = getMsFromTimestamp(item?.expiresAt);
+      return expiresAtMs > 0 && expiresAtMs <= Date.now();
+    })
+    .map((item: any) => item.id);
+
+  if (expiredIds.length > 0) {
+    await Promise.all(expiredIds.map((id: string) => expireReservationIfNeeded(id)));
+
+    const [freshBuyer, freshSeller] = await Promise.all([getDocs(qBuyer), getDocs(qSeller)]);
+    const refreshed = [...freshBuyer.docs, ...freshSeller.docs].map((d) => ({ id: d.id, ...d.data() }));
+    const refreshedUnique = Array.from(new Map(refreshed.map((item: any) => [item.id, item])).values());
+    return refreshedUnique.sort((a: any, b: any) => (b?.createdAt?.seconds || 0) - (a?.createdAt?.seconds || 0));
+  }
+
   return unique.sort((a: any, b: any) => (b?.createdAt?.seconds || 0) - (a?.createdAt?.seconds || 0));
+}
+
+export async function getReservationsBySeller(sellerId: string) {
+  const qSeller = query(collection(firestore, RESERVATIONS_COLLECTION), where('sellerId', '==', sellerId));
+  const snap = await getDocs(qSeller);
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .sort((a: any, b: any) => (b?.createdAt?.seconds || 0) - (a?.createdAt?.seconds || 0));
 }
 
 export async function getReservationById(reservationId: string) {

@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import {
   cancelReservation as cancelReservationService,
   getReservationById,
+  getReservationsBySeller,
   getReservationsByUser,
   reserveProduct as reserveProductService
 } from '../services/reservationService';
@@ -61,7 +62,7 @@ export function useReservations() {
     setLoading(true);
     setError('');
     try {
-      const data = await getReservationsByUser(sellerId);
+      const data = await getReservationsBySeller(sellerId);
       return data;
     } catch (err) {
       setError('Erro ao carregar reservas do vendedor.');

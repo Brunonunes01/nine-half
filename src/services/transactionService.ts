@@ -29,7 +29,7 @@ export async function completeTransaction({
   paymentMethod: string;
 }) {
   if (!paymentMethod) {
-    throw new Error('Selecione um metodo de pagamento.');
+    throw new Error('Selecione um método de pagamento.');
   }
 
   try {
@@ -47,8 +47,8 @@ export async function completeTransaction({
         throw new Error('Reserva não está ativa.');
       }
 
-      if (reservation.buyerId !== userId && reservation.sellerId !== userId) {
-        throw new Error('Você não tem permissão para finalizar esta compra.');
+      if (reservation.buyerId !== userId) {
+        throw new Error('Apenas o comprador que reservou pode finalizar a compra.');
       }
 
       const productRef = doc(firestore, PRODUCTS_COLLECTION, reservation.productId);

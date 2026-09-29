@@ -24,7 +24,7 @@ export function useAdminUsers() {
       setLastVisible(result.lastVisible);
       setHasMore(result.hasMore);
     } catch (err) {
-      setError(getErrorMessage(err) || 'Erro ao carregar usuarios.');
+      setError(getErrorMessage(err) || 'Erro ao carregar usuários.');
       throw err;
     } finally {
       setLoading(false);
@@ -41,7 +41,7 @@ export function useAdminUsers() {
       setLastVisible(result.lastVisible);
       setHasMore(result.hasMore);
     } catch (err) {
-      setError(getErrorMessage(err) || 'Erro ao carregar mais usuarios.');
+      setError(getErrorMessage(err) || 'Erro ao carregar mais usuários.');
       throw err;
     } finally {
       setLoadingMore(false);
@@ -55,7 +55,7 @@ export function useAdminUsers() {
       await updateUserRole({ userId, tipo });
       setUsers((prev) => prev.map((item) => (item.id === userId ? { ...item, tipo } : item)));
     } catch (err) {
-      setError(getErrorMessage(err) || 'Erro ao atualizar tipo de usuario.');
+      setError(getErrorMessage(err) || 'Erro ao atualizar tipo de usuário.');
       throw err;
     } finally {
       setLoading(false);
@@ -70,12 +70,12 @@ export function useAdminUsers() {
       setUsers((prev) =>
         prev.map((item) =>
           item.id === userId
-            ? { ...item, ativo, blockedReason: ativo ? '' : reason || 'Bloqueado por administracao.' }
+            ? { ...item, ativo, blockedReason: ativo ? '' : reason || 'Bloqueado por administração.' }
             : item
         )
       );
     } catch (err) {
-      setError(getErrorMessage(err) || 'Erro ao atualizar status do usuario.');
+      setError(getErrorMessage(err) || 'Erro ao atualizar status do usuário.');
       throw err;
     } finally {
       setLoading(false);

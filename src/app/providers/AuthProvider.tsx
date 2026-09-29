@@ -1,12 +1,12 @@
 import React, { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  getCurrentUser,
   login as loginService,
   logout as logoutService,
   onAuthStateChangedListener,
   register as registerService
 } from '../../services/authService';
 import {
+  ensureUserProfiles,
   getMyPrivateProfile,
   getUserById,
   updateMyPrivateProfile,
@@ -21,6 +21,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const withTimeout = useCallback(async <T,>(promise: Promise<T>, ms = 4000): Promise<T | null> => {
+    return new Promise((resolve) => {
+      const timer = setTimeout(() => resolve(null), ms);
+      promise
+        .then((value) => {
+          clearTimeout(timer);
+          resolve(value);
+        })
+        .catch(() => {
+          clearTimeout(timer);
+          resolve(null);
+        });
+    });
+  }, []);
+
   const syncUser = useCallback(async (authUser: any) => {
     if (!authUser) {
       setUser(null);
@@ -28,20 +43,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const [profile, privateProfile] = await Promise.all([
-        getUserById(authUser.uid),
-        getMyPrivateProfile(authUser.uid)
-      ]);
-      setUser({
+      await withTimeout(
+        ensureUserProfiles({
+          uid: authUser.uid,
+          email: authUser.email || '',
+          nome: authUser.displayName || ''
+        }),
+        5000
+      );
+
+      const profile = await withTimeout(getUserById(authUser.uid), 4500);
+      setUser((prev: any) => ({
         uid: authUser.uid,
         email: authUser.email,
-        ...profile,
-        ...privateProfile
-      });
+        ...prev,
+        ...profile
+      }));
+
+      const privateProfile = await withTimeout(getMyPrivateProfile(authUser.uid), 2500);
+      if (privateProfile) {
+        setUser((prev: any) => ({
+          ...prev,
+          ...privateProfile
+        }));
+      }
     } catch (err) {
       console.error('[AuthProvider] Erro ao sincronizar usuário:', err);
     }
-  }, []);
+  }, [withTimeout]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChangedListener((authUser) => {
@@ -51,29 +80,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return unsubscribe;
   }, [syncUser]);
 
-  const login = useCallback(async (email, password) => {
+  const login = useCallback(async (email: string, password: string) => {
     setLoading(true);
     setError('');
     try {
       await loginService(email, password);
     } catch (err) {
       setError(getErrorMessage(err));
-      throw err;
-    } finally {
       setLoading(false);
+      throw err;
     }
   }, []);
 
-  const register = useCallback(async (payload) => {
+  const register = useCallback(async (payload: any) => {
     setLoading(true);
     setError('');
     try {
       await registerService(payload);
     } catch (err) {
       setError(getErrorMessage(err));
-      throw err;
-    } finally {
       setLoading(false);
+      throw err;
     }
   }, []);
 
@@ -83,7 +110,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setError('');
     try {
       await updateUserProfile(user.uid, data);
-      // Re-sincroniza para atualizar o estado local
       await syncUser({ uid: user.uid, email: user.email });
     } catch (err) {
       setError(getErrorMessage(err));
@@ -115,9 +141,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await logoutService();
     } catch (err) {
       setError(getErrorMessage(err));
-      throw err;
-    } finally {
       setLoading(false);
+      throw err;
     }
   }, []);
 
