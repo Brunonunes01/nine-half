@@ -8,8 +8,7 @@ coverage/
 *.log
 *.tsbuildinfo
 
-# Configuracao local e credenciais
-.env
+# Configuracao publica do app versionada; overrides locais e credenciais ignorados
 .env.*
 !.env.example
 credentials.json

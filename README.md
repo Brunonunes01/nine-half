@@ -24,7 +24,9 @@ npm install
 ```
 
 ## Configuracao `.env`
-Use `.env.example` como base:
+O `.env` com as configuracoes publicas do aplicativo acompanha o repositorio. Depois de clonar, nao e necessario copiar esse arquivo. Ele conecta ao mesmo Firebase e Cloudinary do projeto.
+
+Para usar seus proprios servicos, crie um `.env.local` (ignorado pelo Git), usando `.env.example` como base:
 ```env
 EXPO_PUBLIC_FIREBASE_API_KEY=...
 EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=...
@@ -85,4 +87,5 @@ node scripts/test-navigation.cjs
 - `android/` e `Gerar apk/`: projeto nativo e instrucoes de build local.
 - `scripts/backfill-products.mjs`: manutencao dos campos de busca de produtos antigos; nao executar como parte da instalacao.
 - `materiais-locais/`: esboco, resumo e diagramas do TCC, preservados apenas neste computador e ignorados pelo Git.
-- `.env`, `node_modules/`, caches, exports e APKs nao devem ser versionados.
+- `.env`: somente configuracoes publicas do aplicativo, compartilhadas para facilitar a instalacao.
+- `.env.local`, credenciais privadas, `node_modules/`, caches, exports e APKs nao devem ser versionados.
