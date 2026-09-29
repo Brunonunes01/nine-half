@@ -1,16 +1,16 @@
 export const colors = {
   // Backgrounds
-  background: '#000000',
-  backgroundSecondary: '#121212',
+  background: '#0C0D0F',
+  backgroundSecondary: '#14161A',
   
   // Surfaces
-  surface: '#1E1E1E',
-  border: '#2D2D2D',
+  surface: '#1B1E23',
+  border: '#343840',
   
   // Typography
   textPrimary: '#FFFFFF',
-  textSecondary: '#A1A1AA',
-  textCaption: '#71717A',
+  textSecondary: '#B7BBC4',
+  textCaption: '#9A9FAA',
   
   // Actions
   primary: '#F97316', // Orange Hype
@@ -29,5 +29,5 @@ export const colors = {
   white: '#FFFFFF',
   black: '#000000',
   transparent: 'transparent',
-  imageBackground: '#1E1E1E'
+  imageBackground: '#1B1E23'
 };

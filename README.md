@@ -10,7 +10,7 @@ Centraliza um fluxo hoje informal (WhatsApp/Instagram) em um app com vitrine, es
 - TypeScript
 - Firebase Auth
 - Firestore
-- Firebase Storage
+- Cloudinary (imagens dos produtos)
 - React Navigation
 - Expo Image Picker
 
@@ -32,6 +32,8 @@ EXPO_PUBLIC_FIREBASE_PROJECT_ID=...
 EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=...
 EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
 EXPO_PUBLIC_FIREBASE_APP_ID=...
+EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME=...
+EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET=...
 ```
 
 ## Rodar o app
@@ -45,12 +47,15 @@ npx expo start -c
 3. Publish
 
 ## Publicar regras Storage
+O upload atual usa Cloudinary. As regras de Firebase Storage sao mantidas para o armazenamento legado, mas nao controlam os uploads atuais.
+
 1. Firebase Console -> Storage -> Rules
 2. Colar conteudo de `storage.rules`
 3. Publish
 
 ## Criar indices Firestore
 Seguir o arquivo `FIRESTORE_INDEXES.md` e os links sugeridos pelo erro de indice no Console.
+Os indices sao configurados pelo Console; nao ha arquivo `firestore.indexes.json` neste repositorio.
 
 ## Fluxos principais
 1. Cadastro/login/logout
@@ -66,3 +71,18 @@ Seguir o arquivo `FIRESTORE_INDEXES.md` e os links sugeridos pelo erro de indice
 
 Telas nao acessam SDK Firebase diretamente; regras de negocio ficam em services e estado de UI em hooks.
 
+## Validacao local
+```bash
+node node_modules/typescript/bin/tsc --noEmit --incremental false
+node scripts/test-reservation-feedback.cjs
+node scripts/test-release-reservation.cjs
+node scripts/test-logout.cjs
+node scripts/test-navigation.cjs
+```
+
+## Estrutura e arquivos locais
+- `src/`, `App.tsx` e `assets/`: codigo e imagens do aplicativo.
+- `android/` e `Gerar apk/`: projeto nativo e instrucoes de build local.
+- `scripts/backfill-products.mjs`: manutencao dos campos de busca de produtos antigos; nao executar como parte da instalacao.
+- `materiais-locais/`: esboco, resumo e diagramas do TCC, preservados apenas neste computador e ignorados pelo Git.
+- `.env`, `node_modules/`, caches, exports e APKs nao devem ser versionados.

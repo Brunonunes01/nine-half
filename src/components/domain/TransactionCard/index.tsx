@@ -51,7 +51,7 @@ export default function TransactionCard({
 
         <View style={styles.meta}>
           <Ionicons name="checkmark-circle" size={14} color={colors.success} />
-          <Text style={styles.metaText}>Concluida em {date}</Text>
+          <Text style={styles.metaText}>Concluída em {date}</Text>
         </View>
         <Text style={styles.paymentText}>Pagamento: {getPaymentMethodLabel(transaction?.paymentMethod)}</Text>
       </View>
@@ -63,7 +63,7 @@ export default function TransactionCard({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 12,
+    borderRadius: 16,
     marginBottom: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
@@ -92,18 +92,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center'
   },
   info: {
+    minWidth: 0,
     flex: 1,
     marginLeft: spacing.md,
     justifyContent: 'center'
   },
   header: {
+    flexWrap: 'wrap',
+    gap: spacing.sm,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 2
   },
   brand: {
-    fontSize: 10,
+    fontSize: 12,
     color: colors.textCaption,
     fontWeight: '900',
     letterSpacing: 0.5
@@ -120,7 +123,7 @@ const styles = StyleSheet.create({
     marginTop: 4
   },
   productMeta: {
-    fontSize: 11,
+    fontSize: 12,
     color: colors.textCaption,
     fontWeight: '700',
     marginTop: 2
@@ -132,12 +135,12 @@ const styles = StyleSheet.create({
     gap: 4
   },
   metaText: {
-    fontSize: 11,
+    fontSize: 12,
     color: colors.textSecondary,
     fontWeight: '600'
   },
   paymentText: {
-    fontSize: 11,
+    fontSize: 12,
     color: colors.textCaption,
     fontWeight: '600',
     marginTop: 4

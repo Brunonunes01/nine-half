@@ -5,18 +5,33 @@ import { radius } from '../../../theme/radius';
 import { spacing } from '../../../theme/spacing';
 
 const statusStyles: Record<string, { bg: string; text: string }> = {
-  disponivel: { bg: 'rgba(16, 185, 129, 0.15)', text: colors.success },
-  reservado: { bg: 'rgba(245, 158, 11, 0.15)', text: colors.warning },
-  vendido: { bg: colors.border, text: colors.textSecondary },
-  ativa: { bg: 'rgba(16, 185, 129, 0.15)', text: colors.success },
-  cancelada: { bg: 'rgba(239, 68, 68, 0.15)', text: colors.danger },
-  concluida: { bg: 'rgba(16, 185, 129, 0.15)', text: colors.success },
-  expirada: { bg: colors.border, text: colors.textSecondary },
-  pendente: { bg: 'rgba(245, 158, 11, 0.15)', text: colors.warning },
-  publica: { bg: 'rgba(59, 130, 246, 0.15)', text: '#3B82F6' },
-  privada: { bg: colors.border, text: colors.textSecondary },
-  novo: { bg: 'rgba(249, 115, 22, 0.2)', text: colors.accent },
-  usado: { bg: colors.border, text: colors.textSecondary }
+  disponivel: { bg: '#DDF3E5', text: '#195A39' },
+  reservado: { bg: '#F8E8C8', text: '#755018' },
+  vendido: { bg: '#DEE2E7', text: '#414955' },
+  ativa: { bg: '#DDF3E5', text: '#195A39' },
+  cancelada: { bg: '#F9DEDC', text: '#8C302C' },
+  concluida: { bg: '#DDF3E5', text: '#195A39' },
+  expirada: { bg: '#DEE2E7', text: '#414955' },
+  pendente: { bg: '#F8E8C8', text: '#755018' },
+  publica: { bg: '#DDE9F9', text: '#305A91' },
+  privada: { bg: '#DEE2E7', text: '#414955' },
+  novo: { bg: '#FBE4D4', text: '#85431A' },
+  usado: { bg: '#DEE2E7', text: '#414955' }
+};
+
+const statusLabels: Record<string, string> = {
+  disponivel: 'Disponível',
+  reservado: 'Reservado',
+  vendido: 'Vendido',
+  ativa: 'Ativa',
+  cancelada: 'Cancelada',
+  concluida: 'Concluída',
+  expirada: 'Expirada',
+  pendente: 'Pendente',
+  publica: 'Pública',
+  privada: 'Privada',
+  novo: 'Novo',
+  usado: 'Usado'
 };
 
 type BadgeProps = {
@@ -26,6 +41,7 @@ type BadgeProps = {
 
 export default function Badge({ label, style }: BadgeProps) {
   const normalizedLabel = String(label || '').toLowerCase();
+  const displayLabel = statusLabels[normalizedLabel] || label;
   const badgeStyle = statusStyles[normalizedLabel] || {
     bg: colors.border,
     text: colors.textSecondary
@@ -33,7 +49,7 @@ export default function Badge({ label, style }: BadgeProps) {
 
   return (
     <View style={[styles.badge, { backgroundColor: badgeStyle.bg }, style]}>
-      <Text style={[styles.text, { color: badgeStyle.text }]}>{label.toUpperCase()}</Text>
+      <Text style={[styles.text, { color: badgeStyle.text }]}>{displayLabel.toUpperCase()}</Text>
     </View>
   );
 }
@@ -42,14 +58,14 @@ const styles = StyleSheet.create({
   badge: {
     paddingHorizontal: spacing.sm,
     paddingVertical: 4,
-    borderRadius: 4,
+    borderRadius: 7,
     alignSelf: 'flex-start',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.05)'
   },
   text: {
     fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1.2
+    fontWeight: '700',
+    letterSpacing: 0.5
   }
 });

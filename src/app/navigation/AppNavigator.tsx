@@ -67,7 +67,7 @@ function PrivateNavigator() {
 export function AppNavigator() {
   const { user, loading } = useAuth();
 
-  if (loading) return <Loading text="Authenticating..." />;
+  if (loading) return <Loading text="Autenticando..." />;
 
   return (
     <NavigationContainer theme={MyTheme}>

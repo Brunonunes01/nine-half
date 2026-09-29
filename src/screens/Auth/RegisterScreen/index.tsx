@@ -2,15 +2,13 @@ import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import ScreenContainer from '../../../components/layout/ScreenContainer';
-import Header from '../../../components/layout/Header';
+import AuthLayout from '../../../components/layout/AuthLayout';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 import { useAuth } from '../../../hooks/useAuth';
 import { ROUTES } from '../../../app/routes/routeNames';
 import { validateEmail, validatePassword, validateRequired } from '../../../utils/validators';
 import { colors } from '../../../theme/colors';
-import { radius } from '../../../theme/radius';
 import { spacing } from '../../../theme/spacing';
 import { typography } from '../../../theme/typography';
 
@@ -52,20 +50,19 @@ export default function RegisterScreen({ navigation }: any) {
   }
 
   return (
-    <ScreenContainer scroll backgroundColor={colors.background}>
-      <Header title="Criar Conta" showBack />
-      
-      <View style={styles.content}>
+    <AuthLayout mode="register" onBack={() => navigation.navigate(ROUTES.LOGIN)}>
         <View style={styles.form}>
           <Input
-            label="NOME COMPLETO"
+            icon="person-outline"
+            label="Nome Completo"
             value={nome}
             onChangeText={setNome}
-            placeholder="Ex: Matheus Silva"
+            placeholder="Seu nome completo"
             autoCapitalize="words"
           />
           <Input
-            label="E-MAIL"
+            icon="mail-outline"
+            label="E-mail"
             value={email}
             onChangeText={setEmail}
             placeholder="seu@email.com"
@@ -73,10 +70,11 @@ export default function RegisterScreen({ navigation }: any) {
             autoCapitalize="none"
           />
           <Input
-            label="SENHA"
+            icon="lock-closed-outline"
+            label="Senha"
             value={password}
             onChangeText={setPassword}
-            placeholder="Mínimo 6 caracteres"
+            placeholder="Pelo menos 6 caracteres"
             secureTextEntry
           />
 
@@ -105,19 +103,13 @@ export default function RegisterScreen({ navigation }: any) {
             <Text style={styles.footerLink}> FAZER LOGIN</Text>
           </Pressable>
         </View>
-      </View>
-    </ScreenContainer>
+    </AuthLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xxl,
-  },
   form: {
-    marginTop: spacing.md,
+    gap: 0,
   },
   registerButton: {
     marginTop: spacing.md,
@@ -134,14 +126,17 @@ const styles = StyleSheet.create({
     borderColor: colors.danger,
   },
   errorText: {
+    flex: 1,
     color: colors.danger,
     fontWeight: '700',
     fontSize: 13,
   },
   footer: {
-    marginTop: spacing.xxl,
-    flexDirection: 'row',
-    justifyContent: 'center',
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: 24,
+    marginTop: 28,
+    gap: 8,
     alignItems: 'center',
   },
   footerText: {
@@ -150,10 +145,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   footerLink: {
-    ...typography.body,
     color: colors.primary,
-    fontWeight: '900',
-    fontSize: 14,
-    letterSpacing: 0.5,
+    fontSize: 13,
+    fontWeight: '800',
+    paddingVertical: 10,
   }
 });

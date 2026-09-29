@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import Header from '../../components/layout/Header';
@@ -18,7 +18,7 @@ export default function ChatRoomScreen({ route }: any) {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [peerName, setPeerName] = useState('');
-  const myName = user?.nome || 'Voce';
+  const myName = user?.nome || 'Você';
 
   useEffect(() => {
     if (!transactionId || !user?.uid) return;
@@ -64,12 +64,12 @@ export default function ChatRoomScreen({ route }: any) {
 
   const getSenderName = useCallback(
     (senderId: string) => {
-      if (!chat || !senderId) return 'Usuario';
+      if (!chat || !senderId) return 'Usuário';
       if (String(senderId) === String(user?.uid)) return myName;
       if (String(senderId) === String(chat?.buyerId) || String(senderId) === String(chat?.sellerId)) {
         return peerName || 'Contato';
       }
-      return 'Usuario';
+      return 'Usuário';
     },
     [chat, user?.uid, myName, peerName]
   );
@@ -83,6 +83,8 @@ export default function ChatRoomScreen({ route }: any) {
       await sendMessage({ chatId: chat.id, senderId: user.uid, text: body });
       setText('');
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (err: any) {
+      Alert.alert('Erro ao enviar mensagem', err?.message || 'Não foi possível enviar a mensagem agora.');
     } finally {
       setSending(false);
     }
@@ -142,7 +144,7 @@ export default function ChatRoomScreen({ route }: any) {
             multiline
             maxLength={800}
           />
-          <Pressable style={[styles.sendBtn, !canSend && styles.sendBtnDisabled]} onPress={handleSend} disabled={!canSend}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Enviar mensagem" style={[styles.sendBtn, !canSend && styles.sendBtnDisabled]} onPress={handleSend} disabled={!canSend}>
             <Ionicons name="send" size={18} color={canSend ? colors.black : colors.textCaption} />
           </Pressable>
         </View>
@@ -187,12 +189,12 @@ const styles = StyleSheet.create({
   },
   msgBubble: {
     maxWidth: '80%',
-    borderRadius: 12,
+    borderRadius: 18,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm
   },
   senderName: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     marginBottom: 4,
     opacity: 0.9
@@ -206,19 +208,22 @@ const styles = StyleSheet.create({
     textAlign: 'left'
   },
   msgBubbleMine: {
-    backgroundColor: colors.primary
+    borderBottomRightRadius: 4,
+    backgroundColor: '#343B2A'
   },
   msgBubbleOther: {
+    borderBottomLeftRadius: 4,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border
   },
   msgText: {
+    lineHeight: 22,
     fontSize: 14
   },
   msgTextMine: {
-    color: colors.black,
-    fontWeight: '700'
+    color: colors.white,
+    fontWeight: '500'
   },
   msgTextOther: {
     color: colors.white
@@ -233,11 +238,14 @@ const styles = StyleSheet.create({
     fontWeight: '800'
   },
   emptySubtitle: {
+    textAlign: 'center',
+    lineHeight: 21,
     marginTop: spacing.xs,
     color: colors.textSecondary,
     fontSize: 12
   },
   composer: {
+    paddingBottom: spacing.md,
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: spacing.sm,

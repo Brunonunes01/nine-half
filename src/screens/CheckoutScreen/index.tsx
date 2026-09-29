@@ -19,10 +19,11 @@ import { typography } from '../../theme/typography';
 import { formatCurrencyBRL, formatSizeBR } from '../../utils/formatters';
 
 export default function CheckoutScreen({ navigation, route }: any) {
-  const { productId } = route.params;
+  const productId = route?.params?.productId;
+  const existingReservationId = route?.params?.reservationId;
   const { user } = useAuth();
   const { selectedProduct, loadProductById, loading: loadingProduct } = useProducts();
-  const { reserveProduct, loading: reserving } = useReservations();
+  const { reserveProduct, cancelReservation, loading: reserving } = useReservations();
   const { completeTransaction, loading: completing } = useTransactions();
   
   const [paymentMethod, setPaymentMethod] = useState<(typeof PAYMENT_METHODS)[keyof typeof PAYMENT_METHODS]>(
@@ -46,16 +47,21 @@ export default function CheckoutScreen({ navigation, route }: any) {
 
   async function handleFinalize() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    let reservationId = String(existingReservationId || '');
+    let createdReservationNow = false;
     try {
-      // No protótipo, fazemos a reserva e já simulamos a conclusão da transação
-      const reserveResult = await reserveProduct({ 
-        productId: selectedProduct.id, 
-        buyerId: user.uid 
-      });
+      if (!reservationId) {
+        const reserveResult = await reserveProduct({
+          productId: selectedProduct.id,
+          buyerId: user.uid
+        });
+        reservationId = reserveResult?.reservationId || '';
+        createdReservationNow = Boolean(reservationId);
+      }
 
-      if (reserveResult?.reservationId) {
+      if (reservationId) {
         const txResult = await completeTransaction({
-          reservationId: reserveResult.reservationId,
+          reservationId,
           userId: user.uid,
           paymentMethod
         });
@@ -66,12 +72,22 @@ export default function CheckoutScreen({ navigation, route }: any) {
         }
       }
     } catch (err: any) {
+      if (reservationId && createdReservationNow) {
+        try {
+          await cancelReservation({
+            reservationId,
+            userId: user.uid,
+            cancelReason: 'Falha na finalizacao do checkout.'
+          });
+        } catch (_) {}
+      }
+
       Alert.alert('Erro no Checkout', err?.message || 'Não foi possível processar o pagamento simulado.');
     }
   }
 
   return (
-    <ScreenContainer scroll backgroundColor={colors.background}>
+    <ScreenContainer scroll maxContentWidth={720} backgroundColor={colors.background}>
       <Header title="CHECKOUT" showBack subtitle={step === 1 ? "Revisão do Pedido" : "Forma de Pagamento"} />
 
       <View style={styles.container}>
@@ -150,7 +166,7 @@ export default function CheckoutScreen({ navigation, route }: any) {
                       />
                       <Input 
                         label="RUA / LOGRADOURO"
-                        placeholder="Ex: Av. Paulista"
+                        placeholder="Ex.: Av. Paulista"
                         value={deliveryAddress}
                         onChangeText={setDeliveryAddress}
                         style={styles.noMarginInput}
@@ -179,7 +195,7 @@ export default function CheckoutScreen({ navigation, route }: any) {
                       </View>
                       <Input 
                         label="CIDADE"
-                        placeholder="Ex: São Paulo"
+                        placeholder="Ex.: São Paulo"
                         value={deliveryCity}
                         onChangeText={setDeliveryCity}
                         style={styles.noMarginInput}
@@ -253,7 +269,7 @@ export default function CheckoutScreen({ navigation, route }: any) {
 
 const styles = StyleSheet.create({
   container: {
-    padding: spacing.md,
+    paddingVertical: spacing.md,
   },
   progressRow: {
     flexDirection: 'row',
@@ -294,7 +310,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl
   },
   sectionTitle: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '900',
     color: colors.textSecondary,
     marginBottom: spacing.md,
@@ -320,7 +336,7 @@ const styles = StyleSheet.create({
     marginLeft: spacing.md
   },
   brandText: {
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '900',
     color: colors.textCaption
   },
@@ -331,7 +347,7 @@ const styles = StyleSheet.create({
     marginVertical: 2
   },
   sizeText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: colors.textSecondary
   },
@@ -418,7 +434,9 @@ const styles = StyleSheet.create({
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: spacing.sm
+    marginBottom: spacing.sm,
+    flexWrap: 'wrap',
+    gap: spacing.sm,
   },
   summaryLabel: {
     fontSize: 12,
@@ -468,7 +486,7 @@ const styles = StyleSheet.create({
   },
   toggleBtn: {
     flex: 1,
-    height: 36,
+    minHeight: 48,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.border,
@@ -481,7 +499,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(249, 115, 22, 0.1)'
   },
   toggleBtnText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '800',
     color: colors.textSecondary
   },
@@ -503,7 +521,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   addressHelper: {
-    fontSize: 10,
+    fontSize: 12,
     color: colors.textCaption,
     fontWeight: '700',
     fontStyle: 'italic'

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,6 +21,7 @@ import { themeShadows } from '../../theme/themeShadows';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { formatCurrencyBRL, formatSizeBR } from '../../utils/formatters';
+import { getErrorMessage } from '../../utils/errors';
 
 export default function ProductDetailsScreen({ navigation, route }: any) {
   const productId = route.params?.productId;
@@ -32,6 +33,11 @@ export default function ProductDetailsScreen({ navigation, route }: any) {
 
   const [seller, setSeller] = useState<any>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [reservationFeedback, setReservationFeedback] = useState<{
+    kind: 'profile' | 'success' | 'error';
+    message: string;
+  } | null>(null);
+  const reservationInFlight = useRef(false);
 
   useEffect(() => {
     if (!productId) return;
@@ -64,39 +70,37 @@ export default function ProductDetailsScreen({ navigation, route }: any) {
   );
 
   async function handleReserve() {
-    if (!isProfileComplete) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      const missingFields: string[] = [];
-      if (!String(user?.documento || '').trim()) missingFields.push('CPF/CNPJ');
-      if (!String(user?.endereco || '').trim()) missingFields.push('Endereco');
-      if (!String(user?.telefone || user?.whatsapp || '').trim()) missingFields.push('WhatsApp');
-
-      Alert.alert(
-        'Complete seu perfil',
-        `Para reservar este sneaker, faltam: ${missingFields.join(', ')}.`,
-        [
-          { text: 'Ir para Perfil', onPress: () => navigation.navigate(ROUTES.PROFILE) },
-          { text: 'Agora nao', style: 'cancel' }
-        ]
-      );
+    if (reservationInFlight.current || reservationFeedback?.kind === 'success') return;
+    if (!user?.uid) {
+      setReservationFeedback({ kind: 'error', message: 'Faça login novamente para reservar.' });
       return;
     }
 
+    if (!isProfileComplete) {
+      const missingFields: string[] = [];
+      if (!String(user?.documento || '').trim()) missingFields.push('CPF/CNPJ');
+      if (!String(user?.endereco || '').trim()) missingFields.push('Endereço');
+      if (!String(user?.telefone || user?.whatsapp || '').trim()) missingFields.push('WhatsApp');
+
+      setReservationFeedback({
+        kind: 'profile',
+        message: `Para reservar este sneaker, complete seu perfil: ${missingFields.join(', ')}.`
+      });
+      return;
+    }
+
+    reservationInFlight.current = true;
+    setReservationFeedback(null);
     try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
       await reserveProduct({ productId: selectedProduct.id, buyerId: user.uid });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert(
-        'Reserva confirmada',
-        'Produto reservado com sucesso. Voce pode finalizar a compra em Minhas Reservas.',
-        [
-          { text: 'Ir para Minhas Reservas', onPress: () => navigation.navigate(ROUTES.MY_RESERVATIONS) },
-          { text: 'Ok' }
-        ]
-      );
+      setReservationFeedback({
+        kind: 'success',
+        message: 'Reserva confirmada! Você pode finalizar a compra em Minhas Reservas.'
+      });
     } catch (err: any) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Nao foi possivel reservar', err?.message || 'Tente novamente em instantes.');
+      setReservationFeedback({ kind: 'error', message: getErrorMessage(err) });
+    } finally {
+      reservationInFlight.current = false;
     }
   }
 
@@ -107,7 +111,7 @@ export default function ProductDetailsScreen({ navigation, route }: any) {
           <Header title="" showBack />
         </View>
 
-        <View style={[styles.heroContainer, { height: width }]}>
+        <View style={[styles.heroContainer, { height: Math.min(width, 460) }]}>
           <View style={styles.imageStage}>
             {selectedImage ? (
               <Image source={{ uri: selectedImage }} style={styles.heroImage} resizeMode="contain" />
@@ -221,8 +225,29 @@ export default function ProductDetailsScreen({ navigation, route }: any) {
       </ScreenContainer>
 
       <View style={[styles.actionFooter, { paddingBottom: insets.bottom + spacing.md }]}>
-        {canReserve && user ? (
-          <Button title="RESERVAR AGORA" onPress={handleReserve} loading={reserving} />
+        {reservationFeedback ? (
+          <Text
+            accessibilityRole="alert"
+            accessibilityLiveRegion="polite"
+            style={[
+              styles.reservationFeedback,
+              reservationFeedback.kind === 'success' && styles.reservationSuccess,
+              reservationFeedback.kind === 'error' && styles.reservationError
+            ]}
+          >
+            {reservationFeedback.message}
+          </Text>
+        ) : null}
+        {reservationFeedback?.kind === 'success' ? (
+          <Button title="VER MINHAS RESERVAS" onPress={() => navigation.navigate(ROUTES.MY_RESERVATIONS)} />
+        ) : canReserve && user ? (
+          <>
+            {reservationFeedback?.kind === 'profile' && !isProfileComplete ? (
+              <Button title="COMPLETAR MEU PERFIL" onPress={() => navigation.navigate(ROUTES.PROFILE)} />
+            ) : (
+              <Button title="RESERVAR AGORA" onPress={handleReserve} loading={reserving} />
+            )}
+          </>
         ) : isOwner ? (
           <Button
             title="GERENCIAR ANÚNCIO"
@@ -231,10 +256,14 @@ export default function ProductDetailsScreen({ navigation, route }: any) {
           />
         ) : (
           <Button
-            title={!user ? "LOGAR PARA RESERVAR" : selectedProduct.status === PRODUCT_STATUS.AVAILABLE ? "RESERVAR" : "SNEAKER VENDIDO"}
+            title={!user ? "LOGAR PARA RESERVAR" : selectedProduct.status === PRODUCT_STATUS.RESERVED ? "SNEAKER RESERVADO" : "SNEAKER VENDIDO"}
             variant="secondary"
             disabled={selectedProduct.status !== PRODUCT_STATUS.AVAILABLE}
-            onPress={() => !user && navigation.navigate(ROUTES.LOGIN)}
+            onPress={() => {
+              if (!user) {
+                navigation.goBack();
+              }
+            }}
           />
         )}
       </View>
@@ -286,7 +315,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border
   },
   conditionText: {
-    fontSize: 8,
+    fontSize: 12,
     fontWeight: '900',
     color: colors.white,
     letterSpacing: 1
@@ -340,7 +369,7 @@ const styles = StyleSheet.create({
     borderRadius: 4
   },
   originText: {
-    fontSize: 8,
+    fontSize: 12,
     fontWeight: '900',
     color: colors.primary
   },
@@ -374,7 +403,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm
   },
   specLabel: {
-    fontSize: 8,
+    fontSize: 12,
     fontWeight: '900',
     color: colors.textCaption,
     letterSpacing: 0.5
@@ -388,7 +417,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
   },
   sectionTitle: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '900',
     color: colors.textCaption,
     letterSpacing: 1.5,
@@ -434,7 +463,7 @@ const styles = StyleSheet.create({
     marginTop: 2
   },
   locationText: {
-    fontSize: 11,
+    fontSize: 12,
     color: colors.textSecondary,
     fontWeight: '700'
   },
@@ -445,17 +474,29 @@ const styles = StyleSheet.create({
     fontWeight: '500'
   },
   safeBottom: {
-    height: 140
+    height: spacing.md
   },
   actionFooter: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+    width: '100%',
+    maxWidth: 960,
+    alignSelf: 'center',
     backgroundColor: colors.background,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.md,
     borderTopWidth: 1,
     borderTopColor: colors.border,
+  },
+  reservationFeedback: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: spacing.md,
+    textAlign: 'center'
+  },
+  reservationSuccess: {
+    color: colors.success
+  },
+  reservationError: {
+    color: colors.danger
   }
 });

@@ -32,11 +32,13 @@ export default function ProductCard({
         styles.card,
         pressed && styles.pressed
       ]} 
+      accessibilityRole="button"
+      accessibilityLabel={[product.marca, product.modelo, formatCurrencyBRL(product.preco)].filter(Boolean).join(' ')}
       onPress={handlePress}
     >
       <View style={styles.imageBox}>
         {mainImage ? (
-          <Image source={{ uri: mainImage }} style={styles.image} resizeMode="cover" />
+          <Image source={{ uri: mainImage }} style={styles.image} resizeMode="contain" />
         ) : (
           <View style={styles.placeholder}>
             <Ionicons name="image-outline" size={40} color={colors.textCaption} />
@@ -52,12 +54,12 @@ export default function ProductCard({
 
       <View style={styles.infoBox}>
         <Text style={styles.brandText}>{product.marca?.toUpperCase()}</Text>
-        <Text style={styles.modelText} numberOfLines={1}>{product.modelo}</Text>
+        <Text style={styles.modelText} numberOfLines={2}>{product.modelo}</Text>
         
         <View style={styles.footerRow}>
           <Text style={styles.priceValue}>{formatCurrencyBRL(product.preco)}</Text>
           <View style={styles.actionCircle}>
-            <Ionicons name="add" size={20} color={colors.black} />
+            <Ionicons name="arrow-forward" size={18} color={colors.black} />
           </View>
         </View>
       </View>
@@ -68,7 +70,7 @@ export default function ProductCard({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 16,
+    borderRadius: 20,
     marginBottom: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
@@ -81,15 +83,15 @@ const styles = StyleSheet.create({
     borderColor: colors.primary
   },
   imageBox: {
-    height: 160,
+    aspectRatio: 1,
     backgroundColor: colors.backgroundSecondary,
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
   },
   image: {
-    width: '100%',
-    height: '100%',
+    width: '88%',
+    height: '82%',
   },
   placeholder: {
     alignItems: 'center',
@@ -102,16 +104,16 @@ const styles = StyleSheet.create({
   },
   sizeOverlay: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderTopLeftRadius: 10
+    bottom: 10,
+    right: 10,
+    backgroundColor: colors.surface,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
   },
   sizeOverlayText: {
-    color: colors.white,
-    fontSize: 10,
+    color: colors.textPrimary,
+    fontSize: 12,
     fontWeight: '900'
   },
   infoBox: {
@@ -119,31 +121,35 @@ const styles = StyleSheet.create({
     gap: 2
   },
   brandText: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '900',
-    color: colors.textCaption,
+    color: colors.primary,
     letterSpacing: 1
   },
   modelText: {
+    minHeight: 40,
+    lineHeight: 20,
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: '600',
     color: colors.white,
   },
   footerRow: {
+    flexWrap: 'wrap',
+    gap: spacing.sm,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 8
   },
   priceValue: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '900',
-    color: colors.primary
+    color: colors.white
   },
   actionCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 10,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center'

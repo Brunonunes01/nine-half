@@ -32,7 +32,9 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     color: colors.textSecondary,
     fontWeight: '900',
-    fontSize: 12,
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 22,
     letterSpacing: 1.5
   }
 });

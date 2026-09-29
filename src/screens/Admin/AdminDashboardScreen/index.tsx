@@ -187,7 +187,11 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   metricCard: {
-    width: '47.5%',
+    borderTopWidth: 3,
+    borderTopColor: colors.primary,
+    flexGrow: 1,
+    flexBasis: '45%',
+    minWidth: 140,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
@@ -218,7 +222,7 @@ const styles = StyleSheet.create({
     lineHeight: 22
   },
   metricLabel: {
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '900',
     color: colors.textCaption,
     marginTop: 2,
@@ -281,7 +285,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5
   },
   actionSubtitle: {
-    fontSize: 11,
+    fontSize: 12,
     color: colors.textCaption,
     marginTop: 2,
     fontWeight: '700'

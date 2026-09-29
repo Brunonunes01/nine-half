@@ -50,7 +50,7 @@ export default function PublicProfileScreen({ route, navigation }: any) {
     if (seller?.createdAt?.seconds) {
       return new Date(seller.createdAt.seconds * 1000).getFullYear();
     }
-    return '2024';
+    return new Date().getFullYear().toString();
   }, [seller?.createdAt]);
 
   if (loading) return <Loading text="ACESSANDO PASSPORT..." />;
@@ -69,7 +69,7 @@ export default function PublicProfileScreen({ route, navigation }: any) {
         ListHeaderComponent={
           <View style={styles.headerSection}>
             {/* Passport Card */}
-            <View style={[styles.passportCard, { width: width - (spacing.md * 2) }]}>
+            <View style={styles.passportCard}>
               <View style={styles.passportTop}>
                 <View style={styles.passportAvatar}>
                   <Text style={styles.passportAvatarText}>{userInitial}</Text>
@@ -138,11 +138,12 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   passportCard: {
+    width: '100%',
     backgroundColor: colors.surface,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: spacing.xl,
+    padding: spacing.lg,
     ...themeShadows.medium
   },
   passportTop: {
@@ -166,12 +167,13 @@ const styles = StyleSheet.create({
     color: colors.white
   },
   passportMainInfo: {
+    minWidth: 0,
     flex: 1
   },
   passportName: {
     fontSize: 18,
     fontWeight: '900',
-    color: colors.white,
+    color: colors.textPrimary,
     letterSpacing: 0.5
   },
   memberSince: {
@@ -183,9 +185,9 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start'
   },
   memberSinceText: {
-    fontSize: 8,
+    fontSize: 12,
     fontWeight: '900',
-    color: colors.textCaption,
+    color: colors.textSecondary,
     letterSpacing: 1
   },
   passportDivider: {
@@ -206,12 +208,12 @@ const styles = StyleSheet.create({
   passportStatValue: {
     fontSize: 16,
     fontWeight: '900',
-    color: colors.white
+    color: colors.textPrimary
   },
   passportStatLabel: {
-    fontSize: 8,
+    fontSize: 12,
     fontWeight: '900',
-    color: colors.textCaption,
+    color: colors.textSecondary,
     marginTop: 4,
     letterSpacing: 1
   },
@@ -228,7 +230,7 @@ const styles = StyleSheet.create({
     marginBottom: 2
   },
   typeBadgeText: {
-    fontSize: 8,
+    fontSize: 12,
     fontWeight: '900',
     color: colors.black
   },
@@ -238,7 +240,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   vitrineTitle: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '900',
     color: colors.textSecondary,
     letterSpacing: 1.5

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +8,8 @@ import ScreenContainer from '../../components/layout/ScreenContainer';
 import ReservationCard from '../../components/domain/ReservationCard';
 import EmptyState from '../../components/ui/EmptyState';
 import Loading from '../../components/ui/Loading';
+import Button from '../../components/ui/Button';
+import { getErrorMessage } from '../../utils/errors';
 import { PAYMENT_METHODS, getPaymentMethodLabel } from '../../constants/paymentMethods';
 import { useAuth } from '../../hooks/useAuth';
 import { useReservations } from '../../hooks/useReservations';
@@ -24,9 +26,15 @@ export default function MyReservationsScreen() {
   const [pendingReservation, setPendingReservation] = useState<any>(null);
   const [nowMs, setNowMs] = useState(() => Date.now());
 
+  const [cancelTarget, setCancelTarget] = useState<any>(null);
+  const [cancelBusy, setCancelBusy] = useState(false);
+  const [cancelError, setCancelError] = useState('');
+  const [cancelSuccess, setCancelSuccess] = useState('');
+  const cancelInFlight = useRef(false);
+
   const refresh = useCallback(() => {
     if (!user?.uid) return;
-    loadMyReservations(user.uid);
+    void loadMyReservations(user.uid).catch(() => {});
   }, [user?.uid, loadMyReservations]);
 
   useFocusEffect(
@@ -45,29 +53,31 @@ export default function MyReservationsScreen() {
     [reservations]
   );
 
-  async function handleCancel(reservation: any) {
-    if (!user?.uid) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    Alert.alert('Cancelar reserva', 'Deseja realmente cancelar esta reserva?', [
-      { text: 'Voltar', style: 'cancel' },
-      {
-        text: 'Cancelar agora',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await cancelReservation({
-              reservationId: reservation.id,
-              userId: user.uid,
-              cancelReason: 'Cancelada pelo usuario'
-            });
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            refresh();
-          } catch (_) {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-          }
-        }
-      }
-    ]);
+  function handleCancel(reservation: any) {
+    if (!user?.uid || cancelInFlight.current) return;
+    setCancelError(''); setCancelSuccess(''); setCancelTarget(reservation);
+  }
+
+  function dismissCancel() {
+    if (cancelInFlight.current) return;
+    setCancelTarget(null); setCancelError('');
+  }
+
+  async function confirmCancel() {
+    if (!user?.uid || !cancelTarget?.id || cancelInFlight.current) return;
+    cancelInFlight.current = true;
+    setCancelBusy(true); setCancelError('');
+    try {
+      await cancelReservation({ reservationId: cancelTarget.id, userId: user.uid, cancelReason: 'Cancelada pelo usuário' });
+      setCancelTarget(null);
+      setCancelSuccess('Reserva liberada. O produto está disponível novamente.');
+      refresh();
+    } catch (err) {
+      setCancelError(getErrorMessage(err));
+    } finally {
+      cancelInFlight.current = false;
+      setCancelBusy(false);
+    }
   }
 
   const paymentOptions = useMemo(
@@ -94,7 +104,7 @@ export default function MyReservationsScreen() {
     setPickerVisible(false);
 
     Alert.alert(
-      'Finalizar negocio',
+      'Finalizar negócio',
       `Confirmar venda e marcar produto como vendido?\nMetodo: ${getPaymentMethodLabel(paymentMethod)}`,
       [
         { text: 'Voltar', style: 'cancel' },
@@ -121,7 +131,9 @@ export default function MyReservationsScreen() {
 
   return (
     <ScreenContainer scroll={false} backgroundColor={colors.background}>
-      <Header title="Reservas" subtitle="Controle suas negociacoes em andamento." showBack />
+      <Header title="Reservas" subtitle="Controle suas negociações em andamento." showBack />
+
+      {cancelSuccess ? <Text accessibilityLiveRegion="polite" style={styles.successText}>{cancelSuccess}</Text> : null}
 
       {(error || transactionError) ? (
         <View style={styles.errorBox}>
@@ -144,7 +156,7 @@ export default function MyReservationsScreen() {
               userId={user?.uid}
               nowMs={nowMs}
               onCancel={handleCancel}
-              cancelLoading={loading}
+              cancelLoading={loading || cancelBusy}
               onComplete={handleComplete}
               completeLoading={completing}
             />
@@ -159,11 +171,23 @@ export default function MyReservationsScreen() {
         />
       )}
 
+      <Modal visible={!!cancelTarget} transparent animationType="fade" onRequestClose={dismissCancel}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text accessibilityRole="header" style={styles.modalTitle}>Liberar reserva?</Text>
+            <Text style={styles.modalSubtitle}>A reserva de {cancelTarget?.productModel || 'este produto'} será cancelada e o produto ficará disponível novamente.</Text>
+            {cancelError ? <Text accessibilityRole="alert" style={styles.errorText}>{cancelError}</Text> : null}
+            <Button title="Confirmar liberação" onPress={confirmCancel} loading={cancelBusy} style={styles.confirmButton} />
+            <Button title="Manter reserva" variant="secondary" onPress={dismissCancel} disabled={cancelBusy} style={styles.confirmButton} />
+          </View>
+        </View>
+      </Modal>
+
       <Modal visible={pickerVisible} transparent animationType="fade" onRequestClose={() => setPickerVisible(false)}>
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Metodo de pagamento</Text>
-            <Text style={styles.modalSubtitle}>Selecione o metodo usado nesta negociacao</Text>
+            <Text style={styles.modalTitle}>Método de pagamento</Text>
+            <Text style={styles.modalSubtitle}>Selecione o método usado nesta negociação</Text>
             {paymentOptions.map((method) => (
               <Pressable key={method} style={styles.methodBtn} onPress={() => confirmComplete(method)}>
                 <Text style={styles.methodText}>{getPaymentMethodLabel(method)}</Text>
@@ -186,6 +210,8 @@ export default function MyReservationsScreen() {
 }
 
 const styles = StyleSheet.create({
+  confirmButton: { marginTop: spacing.md },
+  successText: { color: colors.success, marginBottom: spacing.md, fontSize: 14 },
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -212,6 +238,9 @@ const styles = StyleSheet.create({
     padding: spacing.lg
   },
   modalCard: {
+    width: '100%',
+    maxWidth: 560,
+    alignSelf: 'center',
     backgroundColor: colors.surface,
     borderRadius: 12,
     borderWidth: 1,

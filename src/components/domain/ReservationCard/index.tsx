@@ -99,7 +99,7 @@ export default function ReservationCard({
           ) : null}
         </View>
         <Text style={styles.roleLabel}>
-          {isSeller ? 'VOCE E O VENDEDOR' : 'VOCE E O COMPRADOR'}
+          {isSeller ? 'VOCÊ É O VENDEDOR' : 'VOCÊ É O COMPRADOR'}
         </Text>
       </View>
 
@@ -113,6 +113,7 @@ export default function ReservationCard({
                 onPress={() => onComplete?.(reservation)}
                 loading={!!completeLoading}
                 disabled={!!completeLoading || !!cancelLoading}
+                fullWidth={false}
                 style={styles.actionBtn}
               />
               <Button
@@ -121,6 +122,7 @@ export default function ReservationCard({
                 onPress={() => onCancel(reservation)}
                 loading={!!cancelLoading}
                 disabled={!!completeLoading || !!cancelLoading}
+                fullWidth={false}
                 style={styles.actionBtn}
               />
             </>
@@ -142,18 +144,21 @@ export default function ReservationCard({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 12,
+    borderRadius: 16,
     marginBottom: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.md,
   },
   header: {
+    flexWrap: 'wrap',
+    gap: spacing.sm,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
   productBlock: {
+    minWidth: 160,
     flexDirection: 'row',
     flex: 1,
     marginRight: spacing.sm,
@@ -175,12 +180,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   info: {
+    minWidth: 0,
     flex: 1,
     marginLeft: spacing.md,
     justifyContent: 'center',
   },
   brand: {
-    fontSize: 10,
+    fontSize: 12,
     color: colors.textCaption,
     fontWeight: '900',
     letterSpacing: 0.5,
@@ -198,12 +204,14 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   metaProduct: {
-    fontSize: 11,
+    fontSize: 12,
     color: colors.textCaption,
     fontWeight: '700',
     marginTop: 3
   },
   meta: {
+    flexWrap: 'wrap',
+    gap: spacing.sm,
     marginTop: spacing.md,
     paddingTop: spacing.md,
     borderTopWidth: 1,
@@ -227,19 +235,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   roleLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '900',
     color: colors.textCaption,
     letterSpacing: 0.5,
   },
   actions: {
+    flexWrap: 'wrap',
     flexDirection: 'row',
     gap: spacing.sm,
     marginTop: spacing.md,
   },
   actionBtn: {
+    minWidth: 130,
+    paddingHorizontal: spacing.sm,
     flex: 1,
     minHeight: 44,
   }
 });
-

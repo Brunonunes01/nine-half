@@ -40,6 +40,9 @@ export default function Button({
 
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ disabled: isBlocked, busy: loading }}
+      accessibilityLabel={title}
       onPress={handlePress}
       disabled={isBlocked}
       style={({ pressed }) => [
@@ -52,7 +55,7 @@ export default function Button({
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'primary' ? colors.black : colors.primary} />
+        <ActivityIndicator color={variant === 'primary' ? colors.black : variant === 'ghost' ? colors.textSecondary : colors.white} />
       ) : (
         <View style={styles.content}>
           {icon ? <View style={styles.iconWrap}>{icon}</View> : null}
@@ -70,8 +73,8 @@ const variantStyles = StyleSheet.create({
   },
   secondary: {
     backgroundColor: colors.transparent,
-    borderColor: colors.white,
-    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderWidth: 1,
   },
   ghost: {
     backgroundColor: colors.transparent,
@@ -102,26 +105,36 @@ const textStyles = StyleSheet.create({
 const styles = StyleSheet.create({
   button: {
     minHeight: 56,
-    borderRadius: 8, // Slightly rounded as per Hype guide
+    borderRadius: radius.md,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
   },
   fullWidth: {
     width: '100%'
   },
   content: {
+    maxWidth: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center'
   },
   iconWrap: {
+    flexShrink: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginRight: spacing.sm
   },
   text: {
     ...typography.body,
+    fontSize: 14,
+    lineHeight: 20,
     fontWeight: '800',
-    letterSpacing: 1,
+    letterSpacing: 0.5,
+    flexShrink: 1,
+    textAlign: 'center',
+    includeFontPadding: false,
   },
   disabled: {
     opacity: 0.4

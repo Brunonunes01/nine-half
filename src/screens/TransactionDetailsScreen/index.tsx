@@ -122,7 +122,7 @@ export default function TransactionDetailsScreen({ route, navigation }: any) {
         <body>
           <div class="header">
             <h1 class="logo">NINE HALF</h1>
-            <p class="subtitle">OFFICIAL RECEIPT</p>
+            <p class="subtitle">Sneaker Specialist</p>
             <div class="status">PAGAMENTO CONFIRMADO</div>
           </div>
 
@@ -182,6 +182,12 @@ export default function TransactionDetailsScreen({ route, navigation }: any) {
     `;
 
     try {
+      const sharingAvailable = await Sharing.isAvailableAsync();
+      if (!sharingAvailable) {
+        Alert.alert('Indisponível', 'Compartilhamento de arquivos não disponível neste dispositivo.');
+        return;
+      }
+
       const { uri } = await Print.printToFileAsync({ html });
       await Sharing.shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
     } catch (err) {
@@ -204,7 +210,7 @@ export default function TransactionDetailsScreen({ route, navigation }: any) {
           <View style={styles.receiptTop}>
             <View style={styles.hypeLogo}>
               <Text style={styles.hypeLogoText}>NINE HALF</Text>
-              <Text style={styles.hypeLogoSub}>OFFICIAL RECEIPT</Text>
+              <Text style={styles.hypeLogoSub}>Sneaker Specialist</Text>
             </View>
             <View style={styles.statusBadgeBox}>
               <Ionicons name="checkmark-circle" size={20} color={colors.success} />
@@ -320,8 +326,8 @@ const styles = StyleSheet.create({
   },
   receiptCard: {
     backgroundColor: colors.white,
-    borderRadius: 4,
-    padding: spacing.xl,
+    borderRadius: 16,
+    padding: spacing.md,
     ...themeShadows.heavy,
     position: 'relative'
   },
@@ -340,10 +346,10 @@ const styles = StyleSheet.create({
     letterSpacing: 2
   },
   hypeLogoSub: {
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '800',
-    color: colors.textCaption,
-    letterSpacing: 4,
+    color: '#606672',
+    letterSpacing: 1.5,
     marginTop: 2
   },
   statusBadgeBox: {
@@ -358,7 +364,7 @@ const styles = StyleSheet.create({
     borderColor: colors.success
   },
   statusText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '900',
     color: colors.success,
     letterSpacing: 0.5
@@ -374,9 +380,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg
   },
   sectionTitle: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '900',
-    color: colors.textCaption,
+    color: '#606672',
     marginBottom: spacing.sm,
     letterSpacing: 1
   },
@@ -404,9 +410,9 @@ const styles = StyleSheet.create({
     flex: 1
   },
   brandText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '900',
-    color: colors.textCaption,
+    color: '#606672',
     letterSpacing: 0.5
   },
   modelText: {
@@ -416,18 +422,19 @@ const styles = StyleSheet.create({
     marginVertical: 2
   },
   sizeRow: {
+    flexWrap: 'wrap',
     flexDirection: 'row',
     gap: spacing.md
   },
   sizeText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '800',
-    color: colors.textSecondary
+    color: '#505661'
   },
   colorText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
-    color: colors.textCaption
+    color: '#606672'
   },
   partiesRow: {
     flexDirection: 'row',
@@ -443,9 +450,9 @@ const styles = StyleSheet.create({
     flex: 1
   },
   partyLabel: {
-    fontSize: 8,
+    fontSize: 12,
     fontWeight: '900',
-    color: colors.textCaption,
+    color: '#606672',
     marginBottom: 4,
     letterSpacing: 0.5
   },
@@ -461,17 +468,19 @@ const styles = StyleSheet.create({
     gap: spacing.sm
   },
   infoItem: {
+    flexWrap: 'wrap',
+    gap: spacing.sm,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center'
   },
   infoLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '800',
-    color: colors.textCaption
+    color: '#606672'
   },
   infoValue: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     color: colors.black
   },
@@ -480,9 +489,9 @@ const styles = StyleSheet.create({
     marginVertical: spacing.sm
   },
   priceLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '900',
-    color: colors.textCaption,
+    color: '#606672',
     letterSpacing: 1
   },
   priceValue: {
@@ -492,6 +501,7 @@ const styles = StyleSheet.create({
     marginTop: 4
   },
   footerBranding: {
+    flexWrap: 'wrap',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -499,14 +509,15 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl
   },
   footerBrandingText: {
-    fontSize: 8,
+    fontSize: 12,
     fontWeight: '900',
-    color: colors.textCaption,
+    color: '#606672',
     letterSpacing: 1
   },
   shareButton: {
+    paddingHorizontal: spacing.md,
     backgroundColor: colors.primary,
-    height: 56,
+    minHeight: 56,
     borderRadius: 12,
     marginTop: spacing.xl,
     flexDirection: 'row',
@@ -516,6 +527,8 @@ const styles = StyleSheet.create({
     ...themeShadows.medium
   },
   shareButtonText: {
+    flexShrink: 1,
+    textAlign: 'center',
     fontSize: 14,
     fontWeight: '900',
     color: colors.black,

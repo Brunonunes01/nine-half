@@ -21,6 +21,7 @@ export default function Header({
   showBack?: boolean;
 }) {
   const navigation = useNavigation();
+  const displayTitle = title === title.toUpperCase() ? title.charAt(0) + title.slice(1).toLowerCase() : title;
 
   const handleBack = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -36,20 +37,21 @@ export default function Header({
       <View style={styles.topRow}>
         <View style={styles.left}>
           {showBack || onBack ? (
-            <Pressable onPress={handleBack} style={styles.backButton} hitSlop={15}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Voltar" onPress={handleBack} style={styles.backButton} hitSlop={8}>
               <Ionicons name="arrow-back" size={24} color={colors.white} />
             </Pressable>
           ) : null}
         </View>
+        <View style={styles.brand}><Text style={styles.brandMark}>9½</Text><Text style={styles.brandText}>NINE HALF</Text></View>
         <View style={styles.right}>
           {rightAction}
         </View>
       </View>
       
-      <View style={styles.titleArea}>
-        <Text style={styles.title}>{title.toUpperCase()}</Text>
+      {title ? <View style={styles.titleArea}>
+        <Text accessibilityRole="header" style={styles.title}>{displayTitle}</Text>
         {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
-      </View>
+      </View> : null}
     </View>
   );
 }
@@ -58,12 +60,18 @@ const styles = StyleSheet.create({
   container: {
     paddingBottom: spacing.md,
     backgroundColor: colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    marginBottom: 16,
   },
+  brand: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
+  brandMark: { fontSize: 17, fontWeight: '900', color: colors.primary },
+  brandText: { fontSize: 11, fontWeight: '800', letterSpacing: 1.5, color: colors.textSecondary },
   topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    height: 48,
+    minHeight: 48,
   },
   left: {
     width: 48,
@@ -71,31 +79,37 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   right: {
-    flex: 1,
+    minWidth: 48,
     alignItems: 'flex-end',
     justifyContent: 'center',
   },
   backButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'flex-start',
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
     justifyContent: 'center',
   },
   titleArea: {
-    marginTop: spacing.xs,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
   },
   title: {
     ...typography.h1,
-    fontSize: 28,
-    fontWeight: '900',
+    fontSize: 30,
+    fontWeight: '800',
     color: colors.white,
-    letterSpacing: 0.5,
+    letterSpacing: -0.5,
   },
   subtitle: {
     ...typography.body,
     color: colors.textSecondary,
     fontSize: 14,
-    marginTop: 2,
+    marginTop: spacing.sm,
     fontWeight: '500',
+    lineHeight: 21,
   }
 });

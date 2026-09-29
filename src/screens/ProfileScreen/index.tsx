@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -10,18 +10,17 @@ import { useAuth } from '../../hooks/useAuth';
 import { useReservations } from '../../hooks/useReservations';
 import { useTransactions } from '../../hooks/useTransactions';
 import { ROUTES } from '../../app/routes/routeNames';
-import { validateRequired } from '../../utils/validators';
+import { onlyDigits, validateCep, validateDocument, validatePhone, validateRequired } from '../../utils/validators';
 import { colors } from '../../theme/colors';
-import { radius } from '../../theme/radius';
 import { spacing } from '../../theme/spacing';
-import { typography } from '../../theme/typography';
 import { themeShadows } from '../../theme/themeShadows';
+import { getErrorMessage } from '../../utils/errors';
 
 export default function ProfileScreen({ navigation }: any) {
   const { width } = useWindowDimensions();
-  const { user, logout, loading, updateProfile, updatePrivateProfile } = useAuth();
-  const { reservations } = useReservations();
-  const { transactions } = useTransactions();
+  const { user, logout, updateProfile, updatePrivateProfile, error: authError } = useAuth();
+  const { reservations, loadMyReservations } = useReservations();
+  const { transactions, loadMyTransactions } = useTransactions();
   const [showEditForm, setShowEditForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -31,6 +30,10 @@ export default function ProfileScreen({ navigation }: any) {
   const [endereco, setEndereco] = useState('');
   const [cep, setCep] = useState('');
   const [cidade, setCidade] = useState('');
+  const [confirmingLogout, setConfirmingLogout] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState('');
+  const logoutInFlight = useRef(false);
 
   useEffect(() => {
     setNome(user?.nome || '');
@@ -41,45 +44,73 @@ export default function ProfileScreen({ navigation }: any) {
     setCidade(user?.cidade || '');
   }, [user]);
 
+  useEffect(() => {
+    if (!user?.uid) return;
+    loadMyReservations(user.uid).catch(() => undefined);
+    loadMyTransactions(user.uid).catch(() => undefined);
+  }, [user?.uid, loadMyReservations, loadMyTransactions]);
+
   const userInitial = useMemo(() => user?.nome?.charAt(0)?.toUpperCase() || 'S', [user?.nome]);
-  
+
   const joinedDate = useMemo(() => {
     if (user?.createdAt?.seconds) {
       return new Date(user.createdAt.seconds * 1000).getFullYear();
     }
-    return '2024';
+    return new Date().getFullYear().toString();
   }, [user?.createdAt]);
 
   const handleLogout = () => {
-    Alert.alert('Sair da Conta', 'Tem certeza que deseja encerrar sua sessão?', [
-      { text: 'Cancelar', style: 'cancel' },
-      { 
-        text: 'SAIR', 
-        onPress: () => {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          logout();
-        } 
-      }
-    ]);
+    setLogoutError('');
+    setConfirmingLogout(true);
+  };
+
+  const confirmLogout = async () => {
+    if (logoutInFlight.current) return;
+    logoutInFlight.current = true;
+    setLoggingOut(true);
+    setLogoutError('');
+    try {
+      await logout();
+    } catch (err) {
+      setLogoutError(getErrorMessage(err));
+    } finally {
+      logoutInFlight.current = false;
+      setLoggingOut(false);
+    }
   };
 
   const handleSaveProfile = async () => {
+    setError('');
+
     if (!validateRequired(nome)) {
       setError('Informe seu nome.');
       return;
     }
+    if (validateRequired(telefone) && !validatePhone(telefone)) {
+      setError('WhatsApp inválido. Use DDD + número (10 ou 11 dígitos).');
+      return;
+    }
+    if (validateRequired(documento) && !validateDocument(documento)) {
+      setError('CPF/CNPJ inválido. Use 11 ou 14 dígitos.');
+      return;
+    }
+    if (validateRequired(cep) && !validateCep(cep)) {
+      setError('CEP inválido. Use 8 dígitos.');
+      return;
+    }
+
     setSaving(true);
     try {
       await updateProfile({ nome: nome.trim(), cidade: cidade.trim() });
       await updatePrivateProfile({
-        telefone: telefone.trim(),
-        documento: documento.trim(),
+        telefone: onlyDigits(telefone),
+        documento: onlyDigits(documento),
         endereco: endereco.trim(),
-        cep: cep.trim()
+        cep: onlyDigits(cep)
       });
       setShowEditForm(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Perfil Atualizado', 'Suas informações foram salvas.');
+      Alert.alert('Perfil atualizado', 'Suas informações foram salvas.');
     } catch (err: any) {
       setError(err?.message || 'Erro ao atualizar perfil.');
     } finally {
@@ -89,11 +120,10 @@ export default function ProfileScreen({ navigation }: any) {
 
   return (
     <ScreenContainer scroll backgroundColor={colors.background}>
-      <Header title="MEU PERFIL" showBack subtitle="Estatísticas e Configurações" />
+      <Header title="MEU PERFIL" showBack subtitle="Estatísticas e configurações" />
 
       <View style={styles.content}>
-        {/* Hype Passport Card */}
-        <View style={[styles.passportCard, { width: width - (spacing.md * 2) }]}>
+        <View style={styles.passportCard}>
           <View style={styles.passportTop}>
             <View style={styles.passportAvatar}>
               <Text style={styles.passportAvatarText}>{userInitial}</Text>
@@ -134,14 +164,14 @@ export default function ProfileScreen({ navigation }: any) {
           <>
             <View style={styles.section}>
               <Text style={styles.sectionHeader}>GESTÃO DE CONTA</Text>
-              
+
               <Pressable style={styles.menuBtn} onPress={() => setShowEditForm(true)}>
                 <View style={[styles.menuIconBox, { backgroundColor: 'rgba(249, 115, 22, 0.1)' }]}>
                   <Ionicons name="person-outline" size={20} color={colors.primary} />
                 </View>
                 <View style={styles.menuTextContent}>
                   <Text style={styles.menuTitle}>DADOS PESSOAIS</Text>
-                  <Text style={styles.menuSubtitle}>Nome, cidade, documento e endereco</Text>
+                  <Text style={styles.menuSubtitle}>Nome, cidade, documento e endereço</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={colors.textCaption} />
               </Pressable>
@@ -170,13 +200,21 @@ export default function ProfileScreen({ navigation }: any) {
             </View>
 
             <View style={styles.logoutSection}>
-              <Button 
-                title="ENCERRAR SESSÃO" 
-                onPress={handleLogout} 
-                variant="secondary" 
-                style={styles.logoutBtn}
-              />
-              <Text style={styles.versionText}>NINE HALF • VERSION 1.0.0 PREMIUM</Text>
+              {logoutError || authError ? (
+                <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.errorText}>
+                  {logoutError || authError}
+                </Text>
+              ) : null}
+              {confirmingLogout ? (
+                <View style={styles.logoutConfirmation}>
+                  <Text style={styles.logoutPrompt}>Tem certeza de que deseja encerrar sua sessão?</Text>
+                  <Button title="SAIR DA CONTA" onPress={confirmLogout} variant="danger" loading={loggingOut} />
+                  <Button title="CANCELAR" onPress={() => setConfirmingLogout(false)} variant="ghost" disabled={loggingOut} />
+                </View>
+              ) : (
+                <Button title="ENCERRAR SESSÃO" onPress={handleLogout} variant="secondary" style={styles.logoutBtn} />
+              )}
+              <Text style={styles.versionText}>NINE HALF / SUA REDE DE SNEAKERS</Text>
             </View>
           </>
         ) : (
@@ -190,20 +228,33 @@ export default function ProfileScreen({ navigation }: any) {
 
             <View style={styles.form}>
               <Input label="NOME COMPLETO" value={nome} onChangeText={setNome} placeholder="Seu nome" />
-              <Input label="WHATSAPP" value={telefone} onChangeText={setTelefone} placeholder="(00) 00000-0000" keyboardType="phone-pad" />
-              <Input label="CIDADE" value={cidade} onChangeText={setCidade} placeholder="Ex: Sao Paulo - SP" />
-              <Input label="CPF/CNPJ" value={documento} onChangeText={setDocumento} placeholder="000.000.000-00" />
-              <Input label="ENDEREÇO BASE" value={endereco} onChangeText={setEndereco} placeholder="Rua, Número, Bairro" />
-              <Input label="CEP" value={cep} onChangeText={setCep} placeholder="00000-000" keyboardType="numeric" />
-              
+              <Input
+                label="WHATSAPP"
+                value={telefone}
+                onChangeText={(v) => setTelefone(onlyDigits(v).slice(0, 11))}
+                placeholder="11999998888"
+                keyboardType="phone-pad"
+              />
+              <Input label="CIDADE" value={cidade} onChangeText={setCidade} placeholder="Ex.: São Paulo - SP" />
+              <Input
+                label="CPF/CNPJ"
+                value={documento}
+                onChangeText={(v) => setDocumento(onlyDigits(v).slice(0, 14))}
+                placeholder="Somente números"
+                keyboardType="numeric"
+              />
+              <Input label="ENDEREÇO BASE" value={endereco} onChangeText={setEndereco} placeholder="Rua, número, bairro" />
+              <Input
+                label="CEP"
+                value={cep}
+                onChangeText={(v) => setCep(onlyDigits(v).slice(0, 8))}
+                placeholder="Somente números"
+                keyboardType="numeric"
+              />
+
               {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-              <Button 
-                title="SALVAR ALTERAÇÕES" 
-                onPress={handleSaveProfile} 
-                loading={saving} 
-                style={styles.saveBtn}
-              />
+              <Button title="SALVAR ALTERAÇÕES" onPress={handleSaveProfile} loading={saving} style={styles.saveBtn} />
             </View>
           </View>
         )}
@@ -219,11 +270,12 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   passportCard: {
+    width: '100%',
     backgroundColor: colors.surface,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: spacing.xl,
+    padding: spacing.lg,
     ...themeShadows.medium
   },
   passportTop: {
@@ -247,12 +299,13 @@ const styles = StyleSheet.create({
     color: colors.white
   },
   passportMainInfo: {
+    minWidth: 0,
     flex: 1
   },
   passportName: {
     fontSize: 18,
     fontWeight: '900',
-    color: colors.white,
+    color: colors.textPrimary,
     letterSpacing: 0.5
   },
   passportEmail: {
@@ -269,9 +322,9 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start'
   },
   memberSinceText: {
-    fontSize: 8,
+    fontSize: 12,
     fontWeight: '900',
-    color: colors.textCaption,
+    color: colors.textSecondary,
     letterSpacing: 1
   },
   passportDivider: {
@@ -292,12 +345,12 @@ const styles = StyleSheet.create({
   passportStatValue: {
     fontSize: 20,
     fontWeight: '900',
-    color: colors.white
+    color: colors.textPrimary
   },
   passportStatLabel: {
-    fontSize: 8,
+    fontSize: 12,
     fontWeight: '900',
-    color: colors.textCaption,
+    color: colors.textSecondary,
     marginTop: 4,
     letterSpacing: 1
   },
@@ -314,7 +367,7 @@ const styles = StyleSheet.create({
     marginBottom: 2
   },
   typeBadgeText: {
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '900',
     color: colors.black
   },
@@ -324,7 +377,7 @@ const styles = StyleSheet.create({
     width: '100%'
   },
   sectionHeader: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '900',
     color: colors.textCaption,
     letterSpacing: 1.5,
@@ -358,7 +411,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5
   },
   menuSubtitle: {
-    fontSize: 11,
+    fontSize: 12,
     color: colors.textCaption,
     marginTop: 2,
     fontWeight: '600'
@@ -374,8 +427,19 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(239, 68, 68, 0.3)',
     borderWidth: 1
   },
+  logoutConfirmation: {
+    width: '100%',
+    gap: spacing.sm
+  },
+  logoutPrompt: {
+    color: colors.textPrimary,
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
+    marginBottom: spacing.sm
+  },
   versionText: {
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '900',
     color: colors.textCaption,
     marginTop: spacing.xl,
@@ -403,7 +467,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1
   },
   cancelText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '900',
     color: colors.danger
   },

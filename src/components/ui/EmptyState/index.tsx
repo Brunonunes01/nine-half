@@ -22,7 +22,7 @@ export default function EmptyState({
   return (
     <View style={styles.wrap}>
       <View style={styles.iconWrap}>
-        <Ionicons name={icon} size={64} color={colors.border} />
+        <Ionicons name={icon} size={40} color={colors.primary} />
       </View>
       <Text style={styles.title}>{title.toUpperCase()}</Text>
       {description ? <Text style={styles.desc}>{description}</Text> : null}
@@ -43,13 +43,22 @@ export default function EmptyState({
 
 const styles = StyleSheet.create({
   wrap: {
-    padding: spacing.xxl,
+    width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
+    minHeight: 240,
+    padding: spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
     flex: 1,
     backgroundColor: colors.background
   },
   iconWrap: {
+    padding: spacing.lg,
+    borderRadius: 24,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     marginBottom: spacing.lg,
   },
   title: {
@@ -60,6 +69,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1
   },
   desc: {
+    lineHeight: 22,
     ...typography.body,
     color: colors.textSecondary,
     textAlign: 'center',
@@ -72,6 +82,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   button: {
-    minWidth: 200,
+    maxWidth: '100%',
   }
 });

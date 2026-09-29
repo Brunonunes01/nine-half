@@ -79,26 +79,30 @@ export default function AdminUsersScreen({ navigation }: any) {
   function handleToggleActive(targetUser: any) {
     const currentlyActive = targetUser?.ativo !== false;
     if (targetUser?.id === user?.uid && currentlyActive) {
-      Alert.alert('Acao bloqueada', 'Voce nao pode se bloquear.');
+      Alert.alert('Ação bloqueada', 'Você não pode se bloquear.');
       return;
     }
 
     Alert.alert(
-      currentlyActive ? 'Bloquear usuario' : 'Desbloquear usuario',
+      currentlyActive ? 'Bloquear usuário' : 'Desbloquear usuário',
       currentlyActive
-        ? 'Deseja bloquear este usuario?'
-        : 'Deseja desbloquear este usuario?',
+        ? 'Deseja bloquear este usuário?'
+        : 'Deseja desbloquear este usuário?',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
           text: currentlyActive ? 'Bloquear' : 'Desbloquear',
           style: currentlyActive ? 'destructive' : 'default',
           onPress: async () => {
-            await changeUserActiveStatus(
-              targetUser.id,
-              !currentlyActive,
-              currentlyActive ? 'Bloqueado por administrador.' : ''
-            );
+            try {
+              await changeUserActiveStatus(
+                targetUser.id,
+                !currentlyActive,
+                currentlyActive ? 'Bloqueado por administrador.' : ''
+              );
+            } catch (err: any) {
+              Alert.alert('Erro ao atualizar usuário', err?.message || 'Não foi possível atualizar o status agora.');
+            }
           }
         }
       ]
@@ -108,7 +112,7 @@ export default function AdminUsersScreen({ navigation }: any) {
   if (!isAdmin) {
     return (
       <ScreenContainer backgroundColor={colors.background}>
-        <Header title="Usuarios" showBack />
+        <Header title="Usuários" showBack />
         <EmptyState
           title="Acesso restrito"
           description="Somente administradores podem acessar esta tela."
@@ -121,13 +125,13 @@ export default function AdminUsersScreen({ navigation }: any) {
 
   return (
     <ScreenContainer scroll={false} backgroundColor={colors.background}>
-      <Header title="Usuarios" subtitle="Gestao administrativa de contas." showBack />
+      <Header title="Usuários" subtitle="Gestão administrativa de contas." showBack />
 
       <Input
         label="BUSCAR"
         value={searchText}
         onChangeText={setSearchText}
-        placeholder="Nome, email ou tipo..."
+        placeholder="Nome, e-mail ou tipo..."
         icon="search-outline"
       />
 
@@ -310,7 +314,7 @@ const styles = StyleSheet.create({
     fontWeight: '900'
   },
   userEmail: {
-    fontSize: 11,
+    fontSize: 12,
     color: colors.textCaption,
     marginTop: 2,
     fontWeight: '700'
@@ -322,7 +326,7 @@ const styles = StyleSheet.create({
     borderWidth: 1
   },
   roleText: {
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '900',
     letterSpacing: 0.5
   },
@@ -349,12 +353,12 @@ const styles = StyleSheet.create({
     borderRadius: 3
   },
   statusText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '900',
     letterSpacing: 0.5
   },
   reasonText: {
-    fontSize: 10,
+    fontSize: 12,
     color: colors.textCaption,
     fontWeight: '700',
     fontStyle: 'italic',
@@ -363,22 +367,27 @@ const styles = StyleSheet.create({
     marginLeft: spacing.sm
   },
   actionsRow: {
+    flexWrap: 'wrap',
     flexDirection: 'row',
     gap: spacing.sm
   },
   actionBtnBase: {
     flex: 1,
-    height: 44,
+    minHeight: 48,
     borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6
+    gap: 6,
+    minWidth: 130,
+    padding: spacing.sm,
   },
   actionBtnText: {
+    flexShrink: 1,
+    textAlign: 'center',
     color: colors.white,
     fontWeight: '900',
-    fontSize: 11,
+    fontSize: 12,
     letterSpacing: 0.5
   },
   secondaryAction: {
@@ -402,6 +411,9 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalCard: {
+    width: '100%',
+    maxWidth: 560,
+    alignSelf: 'center',
     backgroundColor: colors.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,

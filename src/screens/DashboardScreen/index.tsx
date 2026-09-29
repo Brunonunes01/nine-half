@@ -1,94 +1,21 @@
 import React from 'react';
-import { BackHandler, Image, Platform, Pressable, StyleSheet, Text, ToastAndroid, View } from 'react-native';
+import { BackHandler, Platform, Pressable, StyleSheet, Text, ToastAndroid, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import ScreenContainer from '../../components/layout/ScreenContainer';
-import Header from '../../components/layout/Header';
 import { useAuth } from '../../hooks/useAuth';
 import { useChat } from '../../hooks/useChat';
-import { useReservations } from '../../hooks/useReservations';
-import { useTransactions } from '../../hooks/useTransactions';
 import { ROUTES } from '../../app/routes/routeNames';
 import { USER_TYPES } from '../../constants/userTypes';
 import { colors } from '../../theme/colors';
-import { radius } from '../../theme/radius';
-import { themeShadows } from '../../theme/themeShadows';
-import { spacing } from '../../theme/spacing';
-import { typography } from '../../theme/typography';
-
-function Metric({ 
-  label, 
-  value, 
-  icon,
-  color = colors.primary
-}: { 
-  label: string; 
-  value: number; 
-  icon: keyof typeof Ionicons.glyphMap;
-  color?: string;
-}) {
-  return (
-    <View style={styles.metricItem}>
-      <View style={[styles.metricIconWrap, { backgroundColor: `${color}15` }]}>
-        <Ionicons name={icon} size={18} color={color} />
-      </View>
-      <View>
-        <Text style={styles.metricValue}>{value}</Text>
-        <Text style={styles.metricLabel}>{label.toUpperCase()}</Text>
-      </View>
-    </View>
-  );
-}
-
-function HubAction({ 
-  title, 
-  subtitle,
-  icon, 
-  onPress,
-  variant = 'default'
-}: { 
-  title: string; 
-  subtitle: string;
-  icon: keyof typeof Ionicons.glyphMap; 
-  onPress: () => void;
-  variant?: 'default' | 'primary' | 'outline'
-}) {
-  return (
-    <Pressable 
-      style={({ pressed }) => [
-        styles.hubBtn, 
-        variant === 'primary' && styles.hubBtnPrimary,
-        pressed && styles.pressed
-      ]} 
-      onPress={() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        onPress();
-      }}
-    >
-      <View style={[styles.hubIconBox, variant === 'primary' && { backgroundColor: 'rgba(0,0,0,0.2)' }]}>
-        <Ionicons name={icon} size={24} color={variant === 'primary' ? colors.black : colors.primary} />
-      </View>
-      <View style={styles.hubTextContent}>
-        <Text style={[styles.hubTitle, variant === 'primary' && { color: colors.black }]}>{title.toUpperCase()}</Text>
-        <Text style={[styles.hubSubtitle, variant === 'primary' && { color: 'rgba(0,0,0,0.6)' }]}>{subtitle}</Text>
-      </View>
-      <Ionicons name="chevron-forward" size={18} color={variant === 'primary' ? 'rgba(0,0,0,0.3)' : colors.textCaption} />
-    </Pressable>
-  );
-}
 
 export default function DashboardScreen({ navigation }: any) {
   const { user } = useAuth();
   const { unreadCount, listenUnreadCount } = useChat();
-  const { reservations } = useReservations();
-  const { transactions } = useTransactions();
   const isAdmin = user?.tipo === USER_TYPES.ADMIN;
   const lastBackPressAt = React.useRef(0);
 
-  const firstName = user?.nome?.split(' ')[0] || 'Sneakerhead';
-  const totalReservations = reservations?.length || 0;
-  const totalTransactions = transactions?.length || 0;
+  const firstName = user?.nome?.split(' ')[0] || 'Usuário';
 
   useFocusEffect(
     React.useCallback(() => {
@@ -117,369 +44,55 @@ export default function DashboardScreen({ navigation }: any) {
   }, [user?.uid, listenUnreadCount]);
 
   return (
-    <ScreenContainer scroll backgroundColor={colors.background}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.brandLogo}>NINE HALF</Text>
-          <Text style={styles.brandTagline}>COMMAND CENTER</Text>
-        </View>
-        <Pressable 
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            navigation.navigate(ROUTES.PROFILE);
-          }} 
-          style={styles.profileButton}
-        >
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarText}>{firstName.charAt(0).toUpperCase()}</Text>
-          </View>
-        </Pressable>
+    <ScreenContainer scroll>
+      <View style={styles.topbar}><View style={styles.brand}><Text style={styles.mark}>9½</Text><Text style={styles.wordmark}>NINE HALF</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Abrir meu perfil" onPress={() => navigation.navigate(ROUTES.PROFILE)} style={styles.avatar}><Text style={styles.avatarText}>{firstName.charAt(0).toUpperCase()}</Text></Pressable></View>
+      <View style={styles.hero}>
+        <View style={styles.heroTop}><Text style={styles.eyebrow}>PAINEL DE GESTÃO</Text><Ionicons name="arrow-forward" style={{ transform: [{ rotate: '-45deg' }] }} size={25} color={colors.primary} /></View>
+        <Text accessibilityRole="header" style={styles.heroTitle}>Visão geral</Text>
+        <Text style={styles.heroDescription}>Acesse seu estoque, acompanhe reservas e gerencie suas vendas.</Text>
+        <Pressable accessibilityRole="button" onPress={() => navigation.navigate(ROUTES.GLOBAL_STOCK)} style={({ pressed }) => [styles.exploreButton, pressed && styles.pressed]}><Text style={styles.exploreText}>Consultar estoque global</Text><Ionicons name="arrow-forward" size={20} color={colors.background} /></Pressable>
       </View>
-
-      <View style={styles.statsPanel}>
-        <View style={styles.statsHeader}>
-          <Text style={styles.statsTitle}>PERFORMANCE GERAL</Text>
-          <View style={styles.liveIndicator}>
-            <View style={styles.liveDot} />
-            <Text style={styles.liveText}>AO VIVO</Text>
-          </View>
-        </View>
-        
-        <View style={styles.metricsRow}>
-          <Metric label="Reservas" value={totalReservations} icon="bookmark" color={colors.accent} />
-          <View style={styles.vDivider} />
-          <Metric label="Vendas" value={totalTransactions} icon="checkmark-done" color={colors.success} />
-          <View style={styles.vDivider} />
-          <Metric label="Estoque" value={0} icon="cube" />
-        </View>
+      <View style={styles.sectionHeading}><Text style={styles.sectionTitle}>Estoque e anúncios</Text><Text style={styles.sectionNumber}>01 / ESTOQUE</Text></View>
+      <Pressable accessibilityRole="button" onPress={() => navigation.navigate(ROUTES.SHOWCASE)} style={({ pressed }) => [styles.storeCard, pressed && styles.pressed]}>
+        <View style={styles.storeIcon}><Ionicons name="storefront-outline" size={30} color={colors.primary} /></View><View style={styles.cardBody}><Text style={styles.cardKicker}>GESTÃO DE ESTOQUE</Text><Text style={styles.cardTitle}>Minha vitrine</Text><Text style={styles.cardDescription}>Cadastre produtos e gerencie seus anúncios.</Text></View><Ionicons name="arrow-forward" size={23} color={colors.primary} />
+      </Pressable>
+      <View style={styles.sectionHeading}><Text style={styles.sectionTitle}>Operações</Text><Text style={styles.sectionNumber}>02 / GESTÃO</Text></View>
+      <View style={styles.grid}>
+        {[{ title: 'Reservas', description: 'Acompanhe suas negociações', icon: 'bookmark-outline', route: ROUTES.MY_RESERVATIONS }, { title: 'Histórico', description: 'Suas compras e vendas', icon: 'receipt-outline', route: ROUTES.MY_TRANSACTIONS }, { title: 'Meu caixa', description: 'Resumo das vendas concluídas', icon: 'wallet-outline', route: ROUTES.MY_CASHBOX }, { title: 'Conversas', description: unreadCount ? unreadCount + ' conversa(s) com novidades' : 'Fale com compradores e vendedores', icon: 'chatbubbles-outline', route: ROUTES.MY_CHATS }].map(item => <Pressable key={item.route} accessibilityRole="button" onPress={() => navigation.navigate(item.route)} style={({ pressed }) => [styles.gridCard, pressed && styles.pressed]}><View style={styles.gridCardTop}><Ionicons name={item.icon as any} size={23} color={colors.primary} /><Ionicons name="arrow-forward" style={{ transform: [{ rotate: '-45deg' }] }} size={17} color={colors.textCaption} /></View><Text style={styles.gridTitle}>{item.title}</Text><Text style={styles.gridDescription}>{item.description}</Text></Pressable>)}
       </View>
-
-      <View style={styles.hubSection}>
-        <Text style={styles.sectionHeader}>GESTÃO DE INVENTÁRIO</Text>
-        <HubAction
-          title="Minha Vitrine"
-          subtitle="Gerenciar seus sneakers e anúncios"
-          icon="storefront"
-          variant="primary"
-          onPress={() => navigation.navigate(ROUTES.SHOWCASE)}
-        />
-        <HubAction
-          title="Estoque Global"
-          subtitle="Explorar sneakers de toda a rede"
-          icon="search"
-          onPress={() => navigation.navigate(ROUTES.GLOBAL_STOCK)}
-        />
-      </View>
-
-      <View style={styles.hubSection}>
-        <Text style={styles.sectionHeader}>NEGOCIAÇÕES</Text>
-        <View style={styles.hubGrid}>
-          <Pressable 
-            style={[styles.miniHubCard, { flex: 1 }]}
-            onPress={() => navigation.navigate(ROUTES.MY_RESERVATIONS)}
-          >
-            <Ionicons name="bookmark-outline" size={20} color={colors.white} />
-            <Text style={styles.miniHubTitle}>RESERVAS</Text>
-          </Pressable>
-          <Pressable 
-            style={[styles.miniHubCard, { flex: 1 }]}
-            onPress={() => navigation.navigate(ROUTES.MY_TRANSACTIONS)}
-          >
-            <Ionicons name="receipt-outline" size={20} color={colors.white} />
-            <Text style={styles.miniHubTitle}>HISTORICO</Text>
-          </Pressable>
-        </View>
-        <Pressable
-          style={styles.cashboxCard}
-          onPress={() => navigation.navigate(ROUTES.MY_CASHBOX)}
-        >
-          <View style={styles.cashboxIconWrap}>
-            <Ionicons name="wallet-outline" size={20} color={colors.success} />
-          </View>
-          <View style={styles.cashboxTextWrap}>
-            <Text style={styles.cashboxTitle}>MEU CAIXA</Text>
-            <Text style={styles.cashboxSubtitle}>Saldo e entradas das vendas concluidas</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.textCaption} />
-        </Pressable>
-
-        <Pressable
-          style={styles.cashboxCard}
-          onPress={() => navigation.navigate(ROUTES.MY_CHATS)}
-        >
-          <View style={styles.cashboxIconWrap}>
-            <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.accent} />
-          </View>
-          <View style={styles.cashboxTextWrap}>
-            <Text style={styles.cashboxTitle}>MENSAGENS</Text>
-            <Text style={styles.cashboxSubtitle}>
-              {unreadCount > 0
-                ? `${unreadCount} conversa(s) com mensagens novas`
-                : 'Nenhuma mensagem nova no momento'}
-            </Text>
-          </View>
-          {unreadCount > 0 ? (
-            <View style={styles.unreadBadge}>
-              <Text style={styles.unreadBadgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
-            </View>
-          ) : (
-            <Ionicons name="chevron-forward" size={18} color={colors.textCaption} />
-          )}
-        </Pressable>
-      </View>
-
-      {isAdmin && (
-        <View style={styles.hubSection}>
-          <Text style={styles.sectionHeader}>ADMINISTRAÇÃO</Text>
-          <HubAction
-            title="Painel Administrativo"
-            subtitle="Controle total da plataforma"
-            icon="shield-checkmark"
-            onPress={() => navigation.navigate(ROUTES.ADMIN_DASHBOARD)}
-          />
-        </View>
-      )}
-
-      <View style={styles.bottomSpacer} />
+      {isAdmin && <Pressable accessibilityRole="button" onPress={() => navigation.navigate(ROUTES.ADMIN_DASHBOARD)} style={styles.admin}><Ionicons name="shield-checkmark-outline" size={20} color={colors.textSecondary} /><Text style={styles.adminText}>Painel administrativo</Text><Ionicons name="chevron-forward" size={18} color={colors.textCaption} /></Pressable>}
     </ScreenContainer>
   );
 }
-
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.xs,
-  },
-  brandLogo: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: colors.white,
-    letterSpacing: 1
-  },
-  brandTagline: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: colors.primary,
-    letterSpacing: 2,
-    marginTop: -2
-  },
-  profileButton: {
-    padding: 2
-  },
-  avatarCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  avatarText: {
-    color: colors.primary,
-    fontWeight: '900',
-    fontSize: 18
-  },
-  statsPanel: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: spacing.lg,
-    marginTop: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...themeShadows.medium
-  },
-  statsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.lg
-  },
-  statsTitle: {
-    fontSize: 10,
-    fontWeight: '900',
-    color: colors.textCaption,
-    letterSpacing: 1.5
-  },
-  liveIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4
-  },
-  liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.danger
-  },
-  liveText: {
-    fontSize: 8,
-    fontWeight: '900',
-    color: colors.danger
-  },
-  metricsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between'
-  },
-  metricItem: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 8
-  },
-  metricIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4
-  },
-  metricValue: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: colors.white,
-    textAlign: 'center'
-  },
-  metricLabel: {
-    fontSize: 8,
-    color: colors.textCaption,
-    fontWeight: '800',
-    textAlign: 'center'
-  },
-  vDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: colors.border,
-    opacity: 0.5
-  },
-  hubSection: {
-    marginTop: spacing.xl,
-    gap: spacing.sm
-  },
-  sectionHeader: {
-    fontSize: 11,
-    fontWeight: '900',
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
-    letterSpacing: 1,
-    paddingHorizontal: 4
-  },
-  hubBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    padding: spacing.lg,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.md
-  },
-  hubBtnPrimary: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  hubIconBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  hubTextContent: {
-    flex: 1
-  },
-  hubTitle: {
-    fontSize: 15,
-    fontWeight: '900',
-    color: colors.white,
-    letterSpacing: 0.5
-  },
-  hubSubtitle: {
-    fontSize: 11,
-    color: colors.textCaption,
-    marginTop: 2,
-    fontWeight: '600'
-  },
-  hubGrid: {
-    flexDirection: 'row',
-    gap: spacing.sm
-  },
-  miniHubCard: {
-    backgroundColor: colors.surface,
-    padding: spacing.lg,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    gap: spacing.xs
-  },
-  miniHubTitle: {
-    fontSize: 10,
-    fontWeight: '900',
-    color: colors.white,
-    marginTop: 4
-  },
-  cashboxCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    marginTop: spacing.sm,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 16,
-    padding: spacing.md
-  },
-  cashboxIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: 'rgba(16, 185, 129, 0.12)',
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  cashboxTextWrap: {
-    flex: 1
-  },
-  cashboxTitle: {
-    fontSize: 12,
-    fontWeight: '900',
-    color: colors.white
-  },
-  cashboxSubtitle: {
-    marginTop: 2,
-    fontSize: 11,
-    color: colors.textSecondary
-  },
-  unreadBadge: {
-    minWidth: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.danger,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 6
-  },
-  unreadBadgeText: {
-    color: colors.white,
-    fontSize: 12,
-    fontWeight: '900'
-  },
-  pressed: {
-    opacity: 0.8,
-    transform: [{ scale: 0.98 }]
-  },
-  bottomSpacer: {
-    height: spacing.xxl
-  }
+  topbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 20 },
+  brand: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  mark: { color: colors.primary, fontSize: 29, fontWeight: '900', letterSpacing: -2 },
+  wordmark: { color: colors.white, fontSize: 15, fontWeight: '900', letterSpacing: 1.4 },
+  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, justifyContent: 'center', alignItems: 'center' },
+  avatarText: { color: colors.white, fontSize: 16, fontWeight: '700' },
+  hero: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 20, padding: 24 },
+  heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
+  eyebrow: { color: colors.primary, fontSize: 10, letterSpacing: 1.6, fontWeight: '800', flex: 1 },
+  heroTitle: { color: colors.textPrimary, fontSize: 32, lineHeight: 39, fontWeight: '700', letterSpacing: -0.8, marginTop: 20 },
+  heroDescription: { color: colors.textSecondary, fontSize: 14, lineHeight: 22, maxWidth: 410, marginTop: 14 },
+  exploreButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 20, backgroundColor: colors.primary, alignSelf: 'flex-start', borderRadius: 12, minHeight: 52, paddingHorizontal: 18, marginTop: 24 },
+  exploreText: { fontSize: 14, fontWeight: '700', color: colors.background },
+  sectionHeading: { marginTop: 30, marginBottom: 14, gap: 6 },
+  sectionTitle: { color: colors.white, fontSize: 21, fontWeight: '700', letterSpacing: -0.5 },
+  sectionNumber: { color: colors.textCaption, fontSize: 10, letterSpacing: 1.3, fontWeight: '600' },
+  storeCard: { flexDirection: 'row', alignItems: 'center', gap: 14, borderWidth: 1, borderColor: '#58402D', backgroundColor: '#241D17', borderRadius: 18, padding: 20 },
+  storeIcon: { width: 46, alignItems: 'center' },
+  cardBody: { flex: 1, minWidth: 0 },
+  cardKicker: { color: colors.primary, fontSize: 9, fontWeight: '700', letterSpacing: 1 },
+  cardTitle: { color: colors.white, fontSize: 22, fontWeight: '700', marginTop: 6 },
+  cardDescription: { color: colors.textSecondary, fontSize: 13, lineHeight: 20, marginTop: 6 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  gridCard: { flexGrow: 1, flexBasis: '45%', minWidth: 130, padding: 18, borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  gridCardTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24 },
+  gridTitle: { fontSize: 18, fontWeight: '700', color: colors.white },
+  gridDescription: { fontSize: 12, lineHeight: 19, color: colors.textSecondary, marginTop: 8 },
+  admin: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 24 },
+  adminText: { flex: 1, fontSize: 14, color: colors.textSecondary },
+  pressed: { opacity: 0.8 }
 });

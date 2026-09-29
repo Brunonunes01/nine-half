@@ -2,7 +2,6 @@ import React from 'react';
 import { 
   KeyboardAvoidingView, 
   Platform, 
-  SafeAreaView, 
   ScrollView, 
   StyleSheet, 
   View, 
@@ -12,6 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
+import BottomNav from '../BottomNav';
 
 type ScreenContainerProps = {
   children: React.ReactNode;
@@ -19,6 +19,7 @@ type ScreenContainerProps = {
   withPadding?: boolean;
   style?: ViewStyle;
   backgroundColor?: string;
+  maxContentWidth?: number;
 };
 
 export default function ScreenContainer({
@@ -26,6 +27,7 @@ export default function ScreenContainer({
   scroll = false,
   withPadding = true,
   style,
+  maxContentWidth = 960,
   backgroundColor = colors.background, // Pure Black
 }: ScreenContainerProps) {
   const insets = useSafeAreaInsets();
@@ -38,6 +40,7 @@ export default function ScreenContainer({
 
   const contentStyle = [
     styles.content,
+    { maxWidth: maxContentWidth, alignSelf: 'center' as const },
     withPadding && styles.padding,
     !scroll && { flex: 1 }
   ];
@@ -47,7 +50,7 @@ export default function ScreenContainer({
       <StatusBar barStyle="light-content" backgroundColor={backgroundColor} />
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : Platform.OS === 'android' ? 'height' : undefined}
       >
         {scroll ? (
           <ScrollView 
@@ -55,16 +58,17 @@ export default function ScreenContainer({
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <View style={{ paddingTop: insets.top }}>
+            <View style={{ paddingTop: insets.top + spacing.sm }}>
               {children}
             </View>
           </ScrollView>
         ) : (
-          <View style={[contentStyle, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+          <View style={[contentStyle, { paddingTop: insets.top + spacing.sm, paddingBottom: insets.bottom }]}>
             {children}
           </View>
         )}
       </KeyboardAvoidingView>
+      <BottomNav />
     </View>
   );
 }

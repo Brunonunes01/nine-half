@@ -53,25 +53,25 @@ export default function MyTransactionsScreen({ navigation }: any) {
   const emptyState = useMemo(() => {
     if (activeTab === 'buy') {
       return {
-        title: 'Sem compras concluidas',
+        title: 'Sem compras concluídas',
         description: 'Finalize uma reserva como comprador para ver suas compras aqui.'
       };
     }
     if (activeTab === 'sell') {
       return {
-        title: 'Sem vendas concluidas',
-        description: 'Quando voce vender um produto, a venda aparecera nesta aba.'
+        title: 'Sem vendas concluídas',
+        description: 'Quando você vender um produto, a venda aparecerá nesta aba.'
       };
     }
     return {
-      title: 'Sem transacoes',
-      description: 'Conclua suas negociacoes para gerar um historico de compras e vendas.'
+      title: 'Sem transações',
+      description: 'Conclua suas negociações para gerar um histórico de compras e vendas.'
     };
   }, [activeTab]);
 
   return (
     <ScreenContainer scroll={false} backgroundColor={colors.background}>
-      <Header title="Historico" subtitle="Suas compras e vendas concluidas." showBack />
+      <Header title="Histórico" subtitle="Suas compras e vendas concluídas." showBack />
 
       {error ? (
         <View style={styles.errorBox}>
@@ -87,7 +87,7 @@ export default function MyTransactionsScreen({ navigation }: any) {
       </View>
 
       {loading && transactions.length === 0 ? (
-        <Loading text="BUSCANDO HISTORICO..." />
+        <Loading text="BUSCANDO HISTÓRICO..." />
       ) : (
         <FlatList
           data={filteredTransactions}
@@ -141,6 +141,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md
   },
   tabButton: {
+    minHeight: 48,
+    justifyContent: 'center',
     flex: 1,
     borderWidth: 1,
     borderColor: colors.border,
@@ -151,9 +153,11 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   tabButtonActive: {
+    backgroundColor: 'rgba(249,115,22,0.12)',
     borderColor: colors.primary
   },
   tabText: {
+    textAlign: 'center',
     color: colors.textSecondary,
     fontSize: 12,
     fontWeight: '700'

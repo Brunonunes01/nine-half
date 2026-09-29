@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   imageBox: {
-    height: 200,
+    aspectRatio: 1,
     width: '100%',
   },
   info: {

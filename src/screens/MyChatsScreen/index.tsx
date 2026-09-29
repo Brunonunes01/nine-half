@@ -71,7 +71,7 @@ export default function MyChatsScreen({ navigation }: any) {
                 <View style={styles.body}>
                   <View style={styles.rowBetween}>
                     <Text style={styles.name} numberOfLines={1}>
-                      {item.peerName || 'Usuario'}
+                      {item.peerName || 'Usuário'}
                     </Text>
                     {lastTime ? <Text style={styles.time}>{lastTime}</Text> : null}
                   </View>
@@ -96,7 +96,7 @@ export default function MyChatsScreen({ navigation }: any) {
             <EmptyState
               icon="chatbubble-ellipses-outline"
               title="Nenhuma conversa"
-              description="Quando uma compra for concluida, o chat aparecera aqui."
+              description="Quando uma compra for concluída, o chat aparecerá aqui."
             />
           }
         />
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
   },
   role: {
     color: colors.primary,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700'
   },
   preview: {
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
   },
   time: {
     color: colors.textCaption,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600'
   },
   unreadBadge: {
@@ -182,8 +182,7 @@ const styles = StyleSheet.create({
   },
   unreadText: {
     color: colors.white,
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '800'
   }
 });
-

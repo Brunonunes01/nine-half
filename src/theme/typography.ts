@@ -21,12 +21,12 @@ export const typography = {
   body: {
     fontSize: 16,
     fontWeight: '400' as const,
-    color: '#A1A1AA',
+    color: '#B7BBC4',
   } as TextStyle,
   caption: {
     fontSize: 13,
     fontWeight: '600' as const,
-    color: '#71717A',
+    color: '#9A9FAA',
     letterSpacing: 0.5,
   } as TextStyle,
   price: {

@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import ScreenContainer from '../../../components/layout/ScreenContainer';
+import AuthLayout from '../../../components/layout/AuthLayout';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 import { useAuth } from '../../../hooks/useAuth';
 import { ROUTES } from '../../../app/routes/routeNames';
 import { validateEmail, validatePassword } from '../../../utils/validators';
 import { colors } from '../../../theme/colors';
-import { radius } from '../../../theme/radius';
 import { spacing } from '../../../theme/spacing';
 import { typography } from '../../../theme/typography';
 
@@ -43,33 +42,28 @@ export default function LoginScreen({ navigation }: any) {
   }
 
   return (
-    <ScreenContainer scroll backgroundColor={colors.background}>
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <Image 
-            source={require('../../../../assets/logo.png')} 
-            style={styles.logoImage} 
-            resizeMode="contain" 
-          />
-          <Text style={styles.subtitle}>Gerenciamento premium de sneakers para revendedores.</Text>
-        </View>
-
+    <AuthLayout mode="login">
         <View style={styles.form}>
           <Input
-            label="E-MAIL"
+            icon="mail-outline"
+            label="E-mail"
             value={email}
             onChangeText={setEmail}
-            placeholder="Digite seu e-mail"
+            placeholder="seu@email.com"
             keyboardType="email-address"
             autoCapitalize="none"
           />
           <Input
-            label="SENHA"
+            icon="lock-closed-outline"
+            label="Senha"
             value={password}
             onChangeText={setPassword}
-            placeholder="Digite sua senha"
+            placeholder="Sua senha"
+            returnKeyType="go"
+            onSubmitEditing={handleLogin}
             secureTextEntry
           />
+
 
           {(formError || error) ? (
             <View style={styles.errorContainer}>
@@ -96,35 +90,13 @@ export default function LoginScreen({ navigation }: any) {
             <Text style={styles.footerLink}> CRIAR CONTA AGORA</Text>
           </Pressable>
         </View>
-      </View>
-    </ScreenContainer>
+    </AuthLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-    paddingTop: spacing.xxl,
-    paddingBottom: spacing.xxl,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: spacing.xxl,
-  },
-  logoImage: {
-    width: 200,
-    height: 100,
-    marginBottom: spacing.sm,
-  },
-  subtitle: {
-    ...typography.body,
-    color: colors.textSecondary,
-    marginTop: spacing.sm,
-    textAlign: 'center',
-    paddingHorizontal: spacing.xl,
-  },
   form: {
-    marginTop: spacing.xl,
+    gap: 0,
   },
   loginButton: {
     marginTop: spacing.md,
@@ -141,14 +113,17 @@ const styles = StyleSheet.create({
     borderColor: colors.danger,
   },
   errorText: {
+    flex: 1,
     color: colors.danger,
     fontWeight: '700',
     fontSize: 13,
   },
   footer: {
-    marginTop: spacing.xxl,
-    flexDirection: 'row',
-    justifyContent: 'center',
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: 24,
+    marginTop: 28,
+    gap: 8,
     alignItems: 'center',
   },
   footerText: {
@@ -157,10 +132,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   footerLink: {
-    ...typography.body,
     color: colors.primary,
-    fontWeight: '900',
-    fontSize: 14,
-    letterSpacing: 0.5,
+    fontSize: 13,
+    fontWeight: '800',
+    paddingVertical: 10,
   }
 });

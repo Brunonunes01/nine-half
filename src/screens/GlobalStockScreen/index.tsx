@@ -50,8 +50,8 @@ export default function GlobalStockScreen({ navigation }: any) {
     <ScreenContainer withPadding={false} backgroundColor={colors.background}>
       <View style={styles.headerPadding}>
         <Header
-          title="Estoque Global"
-          subtitle="Explore os melhores sneakers do mercado."
+          title="Estoque global"
+          subtitle="Consulte os produtos disponíveis para reserva."
           showBack
           rightAction={
             <Pressable onPress={handleToggleFilters} style={styles.filterBtn}>
@@ -72,9 +72,10 @@ export default function GlobalStockScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View style={styles.stickyHeader}>
+            <View style={styles.catalogIntro}><Text style={styles.catalogLabel}>PRODUTOS DISPONÍVEIS</Text><Text style={styles.catalogNote}>Busque por modelo, marca, cor ou numeração.</Text></View>
             <View style={styles.searchContainer}>
-              <Ionicons name="search" size={20} color={colors.textCaption} style={styles.searchIcon} />
               <Input
+                icon="search-outline"
                 value={filters.searchText}
                 onChangeText={(v) => updateFilters({ searchText: v })}
                 placeholder="Modelo, marca ou cor..."
@@ -98,7 +99,7 @@ export default function GlobalStockScreen({ navigation }: any) {
                       label="MARCA"
                       value={filters.marca}
                       onChangeText={(v) => updateFilters({ marca: v })}
-                      placeholder="Ex: Nike"
+                      placeholder="Ex.: Nike"
                     />
                   </View>
                   <View style={styles.filterCol}>
@@ -106,7 +107,7 @@ export default function GlobalStockScreen({ navigation }: any) {
                       label="TAMANHO"
                       value={filters.numeracao}
                       onChangeText={(v) => updateFilters({ numeracao: v })}
-                      placeholder="Ex: 42"
+                      placeholder="Ex.: 42"
                       keyboardType="numeric"
                     />
                   </View>
@@ -115,7 +116,7 @@ export default function GlobalStockScreen({ navigation }: any) {
                 <View style={styles.filterRow}>
                   <View style={styles.filterCol}>
                     <Input
-                      label="PRECO MIN"
+                      label="PREÇO MÍN."
                       value={filters.minPrice}
                       onChangeText={(v) => updateFilters({ minPrice: v })}
                       keyboardType="numeric"
@@ -124,7 +125,7 @@ export default function GlobalStockScreen({ navigation }: any) {
                   </View>
                   <View style={styles.filterCol}>
                     <Input
-                      label="PRECO MAX"
+                      label="PREÇO MÁX."
                       value={filters.maxPrice}
                       onChangeText={(v) => updateFilters({ maxPrice: v })}
                       keyboardType="numeric"
@@ -205,14 +206,21 @@ export default function GlobalStockScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
+  catalogIntro: { paddingVertical: 18, gap: 6 },
+  catalogLabel: { color: colors.primary, fontSize: 10, fontWeight: '800', letterSpacing: 1.5 },
+  catalogNote: { color: colors.textSecondary, fontSize: 14 },
   headerPadding: {
     paddingHorizontal: spacing.md
   },
   filterBtn: {
     width: 44,
     height: 44,
-    alignItems: 'flex-end',
-    justifyContent: 'center'
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 14,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   stickyHeader: {
     backgroundColor: colors.background,
@@ -224,12 +232,6 @@ const styles = StyleSheet.create({
   searchContainer: {
     position: 'relative',
     marginTop: spacing.sm
-  },
-  searchIcon: {
-    position: 'absolute',
-    left: spacing.md,
-    top: 18,
-    zIndex: 1
   },
   searchInput: {
     marginBottom: 0
@@ -245,7 +247,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: colors.white,
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '800'
   },
   filtersPanel: {

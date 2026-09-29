@@ -19,7 +19,7 @@ import { spacing } from '../../theme/spacing';
 import { colors } from '../../theme/colors';
 import { themeShadows } from '../../theme/themeShadows';
 import { typography } from '../../theme/typography';
-import { validateRequired } from '../../utils/validators';
+import { validatePrice, validateRequired, validateShoeSize } from '../../utils/validators';
 
 const MAX_IMAGES = 5;
 const EXPIRY_OPTIONS = [
@@ -52,9 +52,10 @@ export default function ProductFormScreen({ navigation, route }: any) {
   const [localImages, setLocalImages] = useState<string[]>([]);
   const [formError, setFormError] = useState('');
   const [imageLoading, setImageLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const totalImages = remoteImages.length + localImages.length;
-  const imageBoxSize = (width - (spacing.md * 2) - (spacing.sm * 2)) / 3;
+  const imageBoxSize = (Math.min(width, 720) - (spacing.md * 2) - (spacing.sm * 2)) / 3;
 
   useEffect(() => {
     if (mode !== 'edit' || !productId) return;
@@ -158,14 +159,42 @@ export default function ProductFormScreen({ navigation, route }: any) {
   }
 
   async function handleSubmit() {
+    if (submitting) return;
+    if (!user?.uid) {
+      setFormError('Sessão expirada. Faça login novamente.');
+      return;
+    }
+
+    setSubmitting(true);
     setFormError('');
-    if (!validateRequired(modelo) || !validateRequired(marca) || !validateRequired(preco)) {
+    if (
+      !validateRequired(modelo) ||
+      !validateRequired(marca) ||
+      !validateRequired(preco) ||
+      !validateRequired(numeracao) ||
+      !validateRequired(localizacao) ||
+      !validateRequired(origem)
+    ) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setFormError('Campos com * são obrigatórios.');
+      setFormError('Preencha todos os campos obrigatórios.');
+      setSubmitting(false);
+      return;
+    }
+    if (!validateShoeSize(numeracao)) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setFormError('Numeração inválida. Use um valor entre 10 e 60.');
+      setSubmitting(false);
+      return;
+    }
+    if (!validatePrice(preco)) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setFormError('Preço inválido. Informe um valor maior que zero.');
+      setSubmitting(false);
       return;
     }
     if (mode === 'create' && !showcaseId) {
       setFormError('Erro de sistema: Vitrine não encontrada.');
+      setSubmitting(false);
       return;
     }
 
@@ -225,12 +254,14 @@ export default function ProductFormScreen({ navigation, route }: any) {
     } catch (err: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setFormError(err?.message || 'Erro ao salvar informações.');
+    } finally {
+      setSubmitting(false);
     }
   }
 
   return (
     <View style={styles.flex}>
-      <ScreenContainer scroll backgroundColor={colors.background}>
+      <ScreenContainer scroll maxContentWidth={720} backgroundColor={colors.background}>
         <Header title={mode === 'edit' ? 'Editar Par' : 'Novo Par'} showBack />
 
         <View style={styles.content}>
@@ -266,16 +297,28 @@ export default function ProductFormScreen({ navigation, route }: any) {
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>INFORMAÇÕES BÁSICAS</Text>
-            <Input label="SNEAKER / MODELO *" value={modelo} onChangeText={setModelo} placeholder="Ex: Jordan 1 High Travis Scott" />
-            <Input label="MARCA *" value={marca} onChangeText={setMarca} placeholder="Ex: Nike" />
-            <Input label="COR" value={cor} onChangeText={setCor} placeholder="Ex: Preto e vermelho" />
+            <Input label="SNEAKER / MODELO *" value={modelo} onChangeText={setModelo} placeholder="Ex.: Jordan 1 High Travis Scott" />
+            <Input label="MARCA *" value={marca} onChangeText={setMarca} placeholder="Ex.: Nike" />
+            <Input label="COR" value={cor} onChangeText={setCor} placeholder="Ex.: Preto e vermelho" />
             
             <View style={styles.row}>
               <View style={styles.col}>
-                <Input label="TAMANHO *" value={numeracao} onChangeText={setNumeracao} keyboardType="numeric" placeholder="Ex: 42" />
+                <Input
+                  label="TAMANHO *"
+                  value={numeracao}
+                  onChangeText={(v) => setNumeracao(v.replace(/[^\d.,]/g, '').slice(0, 5))}
+                  keyboardType="numeric"
+                  placeholder="Ex.: 42"
+                />
               </View>
               <View style={styles.col}>
-                <Input label="PREÇO (R$) *" value={preco} onChangeText={setPreco} keyboardType="decimal-pad" placeholder="0,00" />
+                <Input
+                  label="PREÇO (R$) *"
+                  value={preco}
+                  onChangeText={(v) => setPreco(v.replace(/[^\d.,]/g, '').slice(0, 12))}
+                  keyboardType="decimal-pad"
+                  placeholder="0,00"
+                />
               </View>
             </View>
             
@@ -319,7 +362,7 @@ export default function ProductFormScreen({ navigation, route }: any) {
         <Button 
           title={mode === 'edit' ? 'SALVAR ALTERAÇÕES' : 'CADASTRAR EM ESTOQUE'} 
           onPress={handleSubmit} 
-          loading={loading || imageLoading} 
+          loading={loading || imageLoading || submitting}
         />
       </View>
     </View>
@@ -339,7 +382,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     ...typography.caption,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '900',
     color: colors.textSecondary,
     marginBottom: spacing.md,
@@ -375,9 +418,9 @@ const styles = StyleSheet.create({
     top: 4,
     right: 4,
     backgroundColor: 'rgba(0,0,0,0.6)',
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -428,17 +471,16 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5
   },
   spacer: {
-    height: 100,
+    height: spacing.md,
   },
   fixedFooter: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     backgroundColor: colors.surface,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.md,
     borderTopWidth: 1,
     borderTopColor: colors.border,
+    width: '100%',
+    maxWidth: 720,
+    alignSelf: 'center',
   }
 });

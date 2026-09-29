@@ -20,18 +20,30 @@ import { radius } from '../../theme/radius';
 import { themeShadows } from '../../theme/themeShadows';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
+import { onlyDigits, validateDocument, validatePhone, validateRequired } from '../../utils/validators';
 
 export default function ShowcaseScreen({ navigation }: any) {
-  const { user } = useAuth();
+  const { user, updatePrivateProfile } = useAuth();
   const showcaseApi = useShowcase();
   const productsApi = useProducts();
   const loadingRef = React.useRef(false);
 
   const [newShowcaseName, setNewShowcaseName] = React.useState('Minha Vitrine');
+  const [createPublicNow, setCreatePublicNow] = React.useState(false);
+  const [telefone, setTelefone] = React.useState('');
+  const [documento, setDocumento] = React.useState('');
+  const [endereco, setEndereco] = React.useState('');
+  const [createError, setCreateError] = React.useState('');
   const [editingName, setEditingName] = React.useState('');
   const [showSettingsModal, setShowSettingsModal] = React.useState(false);
   const [search, setSearch] = React.useState('');
   const [productTab, setProductTab] = React.useState<'active' | 'sold'>('active');
+
+  React.useEffect(() => {
+    setTelefone(String(user?.telefone || user?.whatsapp || ''));
+    setDocumento(String(user?.documento || ''));
+    setEndereco(String(user?.endereco || ''));
+  }, [user?.telefone, user?.whatsapp, user?.documento, user?.endereco]);
 
   const loadData = React.useCallback(async () => {
     if (!user?.uid) return;
@@ -54,7 +66,11 @@ export default function ShowcaseScreen({ navigation }: any) {
     }, [loadData])
   );
 
-  const isProfileComplete = !!(user?.documento && user?.endereco && user?.whatsapp);
+  const isProfileComplete = !!(
+    String(user?.documento || '').trim() &&
+    String(user?.endereco || '').trim() &&
+    String(user?.telefone || user?.whatsapp || '').trim()
+  );
 
   const showcaseProducts = React.useMemo(
     () => productsApi.products.filter((p: any) => p.ownerId === user?.uid),
@@ -82,15 +98,44 @@ export default function ShowcaseScreen({ navigation }: any) {
   async function handleCreateShowcase() {
     if (!user?.uid) return;
     try {
+      setCreateError('');
+
+      if (createPublicNow) {
+        if (!validateRequired(telefone) || !validateRequired(documento) || !validateRequired(endereco)) {
+          setCreateError('Para publicar agora, preencha WhatsApp, CPF/CNPJ e endereço.');
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          return;
+        }
+        if (!validatePhone(telefone)) {
+          setCreateError('WhatsApp inválido. Use DDD + número (10 ou 11 dígitos).');
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          return;
+        }
+        if (!validateDocument(documento)) {
+          setCreateError('CPF/CNPJ inválido. Use 11 ou 14 dígitos.');
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          return;
+        }
+
+        await updatePrivateProfile({
+          telefone: onlyDigits(telefone),
+          documento: onlyDigits(documento),
+          endereco: endereco.trim()
+        });
+      }
+
       const created = await showcaseApi.createShowcase({
         userId: user.uid,
         nome: newShowcaseName.trim() || 'Minha Vitrine',
-        visivel: false
+        visivel: createPublicNow
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setEditingName(created.nome || '');
+      setCreatePublicNow(false);
+      setCreateError('');
       await productsApi.loadMyProducts(user.uid);
-    } catch (_) {
+    } catch (err: any) {
+      setCreateError(err?.message || 'Não foi possível criar a vitrine agora.');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
   }
@@ -99,13 +144,15 @@ export default function ShowcaseScreen({ navigation }: any) {
     if (!showcaseApi.showcase?.id) return;
     if (!isProfileComplete) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Perfil incompleto', 'Preencha CPF, endereço e WhatsApp no perfil para ativar vitrine pública.');
+      Alert.alert('Perfil incompleto', 'Preencha CPF, endereço e WhatsApp no perfil para ativar a vitrine pública.');
       return;
     }
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       await showcaseApi.toggleVisibility(showcaseApi.showcase.id, !showcaseApi.showcase.visivel);
-    } catch (_) {}
+    } catch (err: any) {
+      Alert.alert('Erro ao atualizar vitrine', err?.message || 'Não foi possível alterar a visibilidade agora.');
+    }
   }
 
   async function handleSaveSettings() {
@@ -119,19 +166,61 @@ export default function ShowcaseScreen({ navigation }: any) {
 
   if (!showcaseApi.showcase && !showcaseApi.loading) {
     return (
-      <ScreenContainer scroll backgroundColor={colors.background}>
-        <Header title="Criar Loja" showBack subtitle="Configure sua vitrine para a comunidade." />
-        <View style={styles.createForm}>
-          <Input
-            label="NOME DA VITRINE"
-            value={newShowcaseName}
-            onChangeText={setNewShowcaseName}
-            placeholder="Ex: Hype Store"
-          />
-          <Button title="CRIAR VITRINE" onPress={handleCreateShowcase} loading={showcaseApi.loading} />
-        </View>
-      </ScreenContainer>
-    );
+        <ScreenContainer scroll backgroundColor={colors.background}>
+          <Header title="Criar Loja" showBack subtitle="Configure sua vitrine para a comunidade." />
+          <View style={styles.createForm}>
+            <Input
+              label="NOME DA VITRINE"
+              value={newShowcaseName}
+              onChangeText={setNewShowcaseName}
+              placeholder="Ex.: Hype Store"
+            />
+            <View style={styles.createPublicBox}>
+              <View style={styles.switchText}>
+                <Text style={styles.switchTitle}>Publicar Agora</Text>
+                <Text style={styles.switchSubtitle}>Se ativado, sua vitrine já será criada como pública</Text>
+              </View>
+              <Switch
+                value={createPublicNow}
+                onValueChange={(value) => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setCreatePublicNow(value);
+                }}
+                trackColor={{ true: colors.primary, false: colors.border }}
+                thumbColor={colors.white}
+              />
+            </View>
+
+            {createPublicNow ? (
+              <>
+                <Input
+                  label="WHATSAPP *"
+                  value={telefone}
+                  onChangeText={(v) => setTelefone(onlyDigits(v).slice(0, 11))}
+                  keyboardType="phone-pad"
+                  placeholder="11999998888"
+                />
+                <Input
+                  label="CPF/CNPJ *"
+                  value={documento}
+                  onChangeText={(v) => setDocumento(onlyDigits(v).slice(0, 14))}
+                  keyboardType="numeric"
+                  placeholder="Somente números"
+                />
+                <Input
+                  label="ENDEREÇO BASE *"
+                  value={endereco}
+                  onChangeText={setEndereco}
+                  placeholder="Rua, número, bairro"
+                />
+              </>
+            ) : null}
+
+            {createError ? <Text style={styles.createErrorText}>{createError}</Text> : null}
+            <Button title="CRIAR VITRINE" onPress={handleCreateShowcase} loading={showcaseApi.loading} />
+          </View>
+        </ScreenContainer>
+      );
   }
 
   return (
@@ -196,8 +285,8 @@ export default function ShowcaseScreen({ navigation }: any) {
             </View>
 
             <View style={styles.searchContainer}>
-              <Ionicons name="search" size={20} color={colors.textCaption} style={styles.searchIcon} />
               <Input
+                icon="search-outline"
                 placeholder="Buscar no meu estoque..."
                 value={search}
                 onChangeText={setSearch}
@@ -280,13 +369,13 @@ export default function ShowcaseScreen({ navigation }: any) {
       >
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Configurações da Loja</Text>
+            <Text style={styles.modalTitle}>Configurações da loja</Text>
             <View style={styles.modalContent}>
               <Input label="NOME DA VITRINE" value={editingName} onChangeText={setEditingName} />
               
               <View style={styles.switchRow}>
                 <View style={styles.switchText}>
-                  <Text style={styles.switchTitle}>Vitrine Pública</Text>
+                  <Text style={styles.switchTitle}>Vitrine pública</Text>
                   <Text style={styles.switchSubtitle}>Ficar visível no Estoque Global</Text>
                 </View>
                 <Switch
@@ -318,6 +407,24 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
     paddingHorizontal: spacing.md
   },
+  createPublicBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 10,
+    marginBottom: spacing.sm
+  },
+  createErrorText: {
+    ...typography.caption,
+    color: colors.danger,
+    fontWeight: '700',
+    marginBottom: spacing.sm
+  },
   iconBtn: {
     width: 44,
     height: 44,
@@ -329,15 +436,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.md,
     marginTop: spacing.md,
-    marginBottom: spacing.lg
+    marginBottom: spacing.lg,
+    paddingVertical: 20,
+    backgroundColor: '#241D17',
+    marginHorizontal: 16,
+    borderRadius: 20,
   },
   storeAvatar: {
     width: 64,
     height: 64,
     borderRadius: 16,
-    backgroundColor: colors.surface,
+    backgroundColor: '#34271B',
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: '#58402D',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md
@@ -369,7 +480,7 @@ const styles = StyleSheet.create({
     marginRight: 6
   },
   statusText: {
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '900',
     color: colors.textSecondary,
     letterSpacing: 0.5
@@ -378,9 +489,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing.lg,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.backgroundSecondary,
     marginHorizontal: spacing.md,
-    borderRadius: 12,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: colors.border
   },
@@ -396,7 +507,7 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     ...typography.caption,
-    fontSize: 9,
+    fontSize: 12,
     color: colors.textCaption,
     fontWeight: '900',
     letterSpacing: 1,
@@ -411,12 +522,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     marginTop: spacing.md,
     position: 'relative'
-  },
-  searchIcon: {
-    position: 'absolute',
-    left: spacing.lg + 4,
-    top: 18,
-    zIndex: 1
   },
   searchInput: {
     marginBottom: 0
@@ -447,7 +552,7 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.textSecondary,
     fontWeight: '800',
-    fontSize: 11
+    fontSize: 12
   },
   tabTextActive: {
     color: colors.primary
@@ -481,6 +586,9 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalCard: {
+    width: '100%',
+    maxWidth: 560,
+    alignSelf: 'center',
     backgroundColor: colors.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
@@ -517,7 +625,7 @@ const styles = StyleSheet.create({
   },
   switchSubtitle: {
     ...typography.caption,
-    fontSize: 11,
+    fontSize: 12,
     marginTop: 2
   },
   saveBtn: {

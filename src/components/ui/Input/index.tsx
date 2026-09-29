@@ -69,9 +69,10 @@ export default function Input({
           selectionColor={colors.primary}
           onSubmitEditing={onSubmitEditing}
           returnKeyType={returnKeyType}
+          accessibilityLabel={label || placeholder}
         />
         {isPassword ? (
-          <Pressable onPress={() => setShowPassword((v) => !v)} style={styles.trailing}>
+          <Pressable accessibilityRole="button" accessibilityLabel={showPassword ? 'Ocultar senha' : 'Mostrar senha'} onPress={() => setShowPassword((v) => !v)} style={styles.trailing}>
             <Ionicons 
               name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
               size={20} 
@@ -93,24 +94,24 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.textSecondary,
     marginBottom: spacing.sm,
-    fontWeight: '800',
-    textTransform: 'uppercase',
+    fontWeight: '600',
+    textTransform: 'none',
   },
   labelFocused: {
     color: colors.primary,
   },
   field: {
     minHeight: 56,
-    borderRadius: 8,
-    borderWidth: 1.5,
+    borderRadius: 12,
+    borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.surface, // #1E1E1E
+    backgroundColor: colors.backgroundSecondary,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.md
   },
   fieldFocused: {
-    borderColor: colors.primary, // Orange focus
+    borderColor: colors.primary,
   },
   fieldError: {
     borderColor: colors.danger,
@@ -119,9 +120,14 @@ const styles = StyleSheet.create({
     marginRight: spacing.sm
   },
   trailing: {
-    marginLeft: spacing.sm
+    marginLeft: spacing.xs,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   input: {
+    minWidth: 0,
     flex: 1,
     fontSize: 16,
     color: colors.white,

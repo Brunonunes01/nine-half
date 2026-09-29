@@ -28,7 +28,7 @@ export default function MyCashboxScreen() {
 
   return (
     <ScreenContainer backgroundColor={colors.background}>
-      <Header title="Meu Caixa" subtitle="Entradas recebidas nas vendas concluidas." showBack />
+      <Header title="Meu Caixa" subtitle="Entradas recebidas nas vendas concluídas." showBack />
 
       {error ? (
         <View style={styles.errorBox}>
@@ -38,7 +38,7 @@ export default function MyCashboxScreen() {
       ) : null}
 
       <View style={styles.balanceCard}>
-        <Text style={styles.balanceLabel}>SALDO DISPONIVEL</Text>
+        <Text style={styles.balanceLabel}>TOTAL EM VENDAS</Text>
         <Text style={styles.balanceValue}>{formatCurrencyBRL(cashbox?.balance || 0)}</Text>
         <View style={styles.balanceMeta}>
           <Text style={styles.balanceMetaText}>Vendas creditadas: {cashbox?.totalSales || 0}</Text>
@@ -81,7 +81,7 @@ export default function MyCashboxScreen() {
           ListEmptyComponent={
             <EmptyState
               title="Sem entradas no caixa"
-              description="Quando uma venda for concluida, o valor aparece aqui automaticamente."
+              description="Quando uma venda for concluída, o valor aparecerá aqui automaticamente."
               icon="wallet-outline"
             />
           }
@@ -110,21 +110,21 @@ const styles = StyleSheet.create({
   },
   balanceCard: {
     backgroundColor: colors.surface,
-    borderRadius: 14,
+    borderRadius: 22,
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.lg,
     marginBottom: spacing.md
   },
   balanceLabel: {
-    color: colors.textCaption,
-    fontSize: 10,
+    color: colors.textSecondary,
+    fontSize: 12,
     fontWeight: '800',
     letterSpacing: 1
   },
   balanceValue: {
-    color: colors.success,
-    fontSize: 30,
+    color: colors.textPrimary,
+    fontSize: 40,
     fontWeight: '900',
     marginTop: spacing.xs
   },
@@ -140,6 +140,8 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl
   },
   row: {
+    flexWrap: 'wrap',
+    rowGap: spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surface,
@@ -165,6 +167,7 @@ const styles = StyleSheet.create({
     height: '100%'
   },
   info: {
+    minWidth: 100,
     flex: 1,
     marginLeft: spacing.md
   },
@@ -175,13 +178,13 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     color: colors.textSecondary,
-    fontSize: 11,
+    fontSize: 12,
     marginTop: 2
   },
   value: {
+    marginLeft: spacing.sm,
     color: colors.success,
     fontSize: 14,
     fontWeight: '900'
   }
 });
-
